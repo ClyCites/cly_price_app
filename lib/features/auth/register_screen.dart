@@ -6,7 +6,6 @@ import '../../core/providers/providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/validators.dart';
 import '../dashboard/dashboard_screen.dart';
-import 'login_screen.dart';
 import 'widgets/auth_button.dart';
 import 'widgets/auth_text_field.dart';
 

@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/service_locator.dart';
 
 class NotificationProvider with ChangeNotifier {
   List<Map<String, dynamic>> _notifications = [];

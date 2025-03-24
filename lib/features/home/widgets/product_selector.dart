@@ -7,6 +7,8 @@ class ProductSelector extends StatelessWidget {
   final String selectedProduct;
   final Function(String) onProductChanged;
 
+  const ProductSelector({super.key});
+
   const Product
 
 

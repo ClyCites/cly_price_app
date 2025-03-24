@@ -12,7 +12,7 @@ class CustomDragTarget<T> extends StatelessWidget {
       builder: (BuildContext context, List<dynamic> accepted, List<dynamic> rejected) {
         return builder;
       },
-      onAccept: onAccept,
+      onAcceptWithDetails: onAccept,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CustomAnimatedList extends StatelessWidget {
+  @override
   final GlobalKey<AnimatedListState> key;
   final IndexedWidgetBuilder itemBuilder;
   final int initialItemCount;

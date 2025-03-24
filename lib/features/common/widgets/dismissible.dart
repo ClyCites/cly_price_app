@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class CustomDismissible extends StatelessWidget {
   final Widget child;
+  @override
   final String key;
   final DismissDirection direction;
   final VoidCallback onDismissed;

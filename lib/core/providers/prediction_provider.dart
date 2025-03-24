@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/models.dart';
 import '../services/service_locator.dart';
 
 class PredictionProvider with ChangeNotifier {

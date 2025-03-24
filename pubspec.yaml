@@ -50,6 +50,8 @@ dependencies:
   device_info_plus: ^9.1.0
   package_info_plus: ^4.2.0
 
+  path: any
+  visibility_detector: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/product_provider.dart';
-import '../../core/theme/app_colors.dart';
 import 'widgets/price_chart.dart';
 import 'widgets/price_summary.dart';
 import 'widgets/product_selector.dart';
