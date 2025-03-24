@@ -1,0 +1,20 @@
+import 'package:flutter/material.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+
+class CustomVisibilityDetector extends StatelessWidget {
+  final Widget child;
+  final Function(VisibilityInfo) onVisibilityChanged;
+  final Key key;
+  
+  const CustomVisibilityDetector({required this.key, required this.child, required this.onVisibilityChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return VisibilityDetector(
+      key: key,
+      child: child,
+      onVisibilityChanged: onVisibilityChanged,
+    );
+  }
+}
+
