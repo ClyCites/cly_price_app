@@ -13,8 +13,8 @@ class CustomVisibilityDetector extends StatelessWidget {
   Widget build(BuildContext context) {
     return VisibilityDetector(
       key: key,
-      child: child,
       onVisibilityChanged: onVisibilityChanged,
+      child: child,
     );
   }
 }
