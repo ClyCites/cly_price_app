@@ -1,56 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'core/providers/providers.dart';
-import 'core/services/service_locator.dart';
-import 'core/theme/app_theme.dart';
+import 'core/providers/settings_provider.dart';
+import 'core/providers/product_provider.dart';
+import 'core/providers/user_provider.dart';
+// import 'core/providers/market_provider.dart'; // Ensure this import is correct and the file exists
+import 'core/providers/prediction_provider.dart';
+import 'core/providers/notification_provider.dart';
 import 'features/splash/splash_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  // Initialize services
-  await setupServiceLocator();
-  
-  // Get theme preference
-  final prefs = await SharedPreferences.getInstance();
-  final isDarkMode = prefs.getBool('isDarkMode') ?? false;
-
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ChangeNotifierProvider(create: (_) => ThemeProvider(isDarkMode)),
-      ChangeNotifierProvider(create: (_) => ProductProvider()),
-      ChangeNotifierProvider(create: (_) => PredictionProvider()),
-      ChangeNotifierProvider(create: (_) => NotificationProvider()),
-      ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
-    ],
-    child: const MyApp(),
-  ));
+void main() {
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    
-    return MaterialApp(
-      title: 'ClyCites',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const SplashScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        // ChangeNotifierProvider(create: (_) => MarketProvider()),
+        ChangeNotifierProvider(create: (_) => PredictionProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, _) {
+          return MaterialApp(
+            title: 'ClyCites',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF4CAF50),
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF4CAF50),
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: settingsProvider.settings.themeMode,
+            home: const SplashScreen(),
+          );
+        },
+      ),
     );
   }
 }
+

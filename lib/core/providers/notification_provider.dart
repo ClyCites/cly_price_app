@@ -1,98 +1,162 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/notification_model.dart';
 
 class NotificationProvider with ChangeNotifier {
-  List<Map<String, dynamic>> _notifications = [];
-  int _unreadCount = 0;
+  List<NotificationModel> _notifications = [];
+  bool _isLoading = false;
+  String? _error;
+
+  List<NotificationModel> get notifications => _notifications;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
   
-  List<Map<String, dynamic>> get notifications => _notifications;
-  int get unreadCount => _unreadCount;
-  
-  NotificationProvider() {
-    _loadNotifications();
-  }
-  
-  Future<void> _loadNotifications() async {
-    // In a real app, you would fetch notifications from an API
-    // For now, we'll use some dummy data
-    _notifications = [
-      {
-        'id': '1',
-        'title': 'Price Alert',
-        'message': 'Rice prices have increased by 5% in Kampala Central Market',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-        'isRead': false,
-        'type': 'price_alert',
-        'data': {
-          'product': 'Rice',
-          'market': 'Kampala Central Market',
-          'price': 2500,
-          'change': 5,
-        },
-      },
-      {
-        'id': '2',
-        'title': 'Market Insight',
-        'message': 'Best time to sell Maize is approaching based on historical data',
-        'timestamp': DateTime.now().subtract(const Duration(days: 1)),
-        'isRead': false,
-        'type': 'market_insight',
-        'data': {
-          'product': 'Maize',
-        },
-      },
-      {
-        'id': '3',
-        'title': 'New Feature',
-        'message': 'You can now compare prices across different markets',
-        'timestamp': DateTime.now().subtract(const Duration(days: 3)),
-        'isRead': true,
-        'type': 'app_update',
-        'data': {},
-      },
-    ];
-    
-    _calculateUnreadCount();
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+
+  void clearAll() {
+    _notifications.clear();
     notifyListeners();
   }
-  
-  void _calculateUnreadCount() {
-    _unreadCount = _notifications.where((n) => n['isRead'] == false).length;
-  }
-  
-  void markAsRead(String id) {
-    final index = _notifications.indexWhere((n) => n['id'] == id);
-    if (index != -1) {
-      _notifications[index]['isRead'] = true;
-      _calculateUnreadCount();
+  // Load notifications from local storage
+  Future<void> loadNotifications() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = prefs.getStringList('notifications') ?? [];
+      
+      _notifications = notificationsJson
+          .map((json) => NotificationModel.fromJson(jsonDecode(json)))
+          .toList();
+      
+      // Sort by timestamp (newest first)
+      _notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to load notifications: ${e.toString()}';
+      _isLoading = false;
       notifyListeners();
     }
   }
-  
-  void markAllAsRead() {
-    for (var i = 0; i < _notifications.length; i++) {
-      _notifications[i]['isRead'] = true;
+
+  // Save notifications to local storage
+  Future<void> _saveNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationsJson = _notifications
+          .map((notification) => jsonEncode(notification.toJson()))
+          .toList();
+      
+      await prefs.setStringList('notifications', notificationsJson);
+    } catch (e) {
+      _error = 'Failed to save notifications: ${e.toString()}';
+      notifyListeners();
     }
-    _unreadCount = 0;
-    notifyListeners();
   }
-  
-  void addNotification(Map<String, dynamic> notification) {
+
+  // Add a new notification
+  Future<void> addNotification(NotificationModel notification) async {
     _notifications.insert(0, notification);
-    _calculateUnreadCount();
     notifyListeners();
+    await _saveNotifications();
   }
-  
-  void removeNotification(String id) {
-    _notifications.removeWhere((n) => n['id'] == id);
-    _calculateUnreadCount();
+
+  // Create and add a new notification
+  Future<void> createNotification({
+    required String title,
+    required String message,
+    required NotificationType type,
+    Map<String, dynamic>? data,
+  }) async {
+    final notification = NotificationModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      message: message,
+      type: type,
+      timestamp: DateTime.now(),
+      data: data,
+    );
+    
+    await addNotification(notification);
+  }
+
+  // Mark a notification as read
+  Future<void> markAsRead(String id) async {
+    final index = _notifications.indexWhere((n) => n.id == id);
+    if (index != -1) {
+      _notifications[index] = _notifications[index].copyWith(isRead: true);
+      notifyListeners();
+      await _saveNotifications();
+    }
+  }
+
+  // Mark all notifications as read
+  Future<void> markAllAsRead() async {
+    _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
     notifyListeners();
+    await _saveNotifications();
   }
-  
-  void clearAll() {
+
+  // Remove a notification
+  Future<void> removeNotification(String id) async {
+    _notifications.removeWhere((n) => n.id == id);
+    notifyListeners();
+    await _saveNotifications();
+  }
+
+  // Clear all notifications
+  Future<void> clearAllNotifications() async {
     _notifications = [];
-    _unreadCount = 0;
     notifyListeners();
+    await _saveNotifications();
+  }
+
+  // Add sample notifications for testing
+  Future<void> addSampleNotifications() async {
+    final now = DateTime.now();
+    
+    final notifications = [
+      NotificationModel(
+        id: '1',
+        title: 'Price Alert: Maize',
+        message: 'Maize prices have increased by 5% in the last 24 hours.',
+        type: NotificationType.priceAlert,
+        timestamp: now.subtract(const Duration(minutes: 30)),
+        data: {'productId': 'maize-001', 'priceChange': 5.0},
+      ),
+      NotificationModel(
+        id: '2',
+        title: 'Market Update',
+        message: 'New market data available for Nairobi region.',
+        type: NotificationType.marketUpdate,
+        timestamp: now.subtract(const Duration(hours: 2)),
+      ),
+      NotificationModel(
+        id: '3',
+        title: 'Price Prediction',
+        message: 'Our AI predicts rice prices will decrease next week.',
+        type: NotificationType.prediction,
+        timestamp: now.subtract(const Duration(hours: 5)),
+        data: {'productId': 'rice-001', 'predictionChange': -3.2},
+      ),
+      NotificationModel(
+        id: '4',
+        title: 'Welcome to ClyCites',
+        message: 'Thank you for installing our app! Start tracking agricultural prices now.',
+        type: NotificationType.system,
+        timestamp: now.subtract(const Duration(days: 1)),
+        isRead: true,
+      ),
+    ];
+    
+    _notifications = notifications;
+    notifyListeners();
+    await _saveNotifications();
   }
 }
 

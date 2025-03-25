@@ -46,7 +46,7 @@ class AppConstants {
   };
   
   // Timeframes
-  static const String timeframes = [
+  static const List<String> timeframes = [
     'Day',
     'Week',
     'Month',

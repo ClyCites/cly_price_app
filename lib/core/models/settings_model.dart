@@ -4,6 +4,10 @@ class AppSettings {
   final ThemeMode themeMode;
   final String language;
   final bool notificationsEnabled;
+  final bool priceAlertsEnabled; // Added direct property
+  final bool marketUpdatesEnabled; // Added direct property
+  final bool predictionAlertsEnabled; // Added direct property
+  final bool systemNotificationsEnabled; // Added direct property
   final List<NotificationSetting> notificationSettings;
   final bool dataSync;
   final String currency;
@@ -15,6 +19,10 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.language = 'English',
     this.notificationsEnabled = true,
+    this.priceAlertsEnabled = true, // Initialize direct property
+    this.marketUpdatesEnabled = true, // Initialize direct property
+    this.predictionAlertsEnabled = true, // Initialize direct property
+    this.systemNotificationsEnabled = true, // Initialize direct property
     this.notificationSettings = const [],
     this.dataSync = true,
     this.currency = 'USD',
@@ -27,6 +35,10 @@ class AppSettings {
     ThemeMode? themeMode,
     String? language,
     bool? notificationsEnabled,
+    bool? priceAlertsEnabled, // Added to copyWith
+    bool? marketUpdatesEnabled, // Added to copyWith
+    bool? predictionAlertsEnabled, // Added to copyWith
+    bool? systemNotificationsEnabled, // Added to copyWith
     List<NotificationSetting>? notificationSettings,
     bool? dataSync,
     String? currency,
@@ -38,6 +50,10 @@ class AppSettings {
       themeMode: themeMode ?? this.themeMode,
       language: language ?? this.language,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      priceAlertsEnabled: priceAlertsEnabled ?? this.priceAlertsEnabled, // Added to copyWith
+      marketUpdatesEnabled: marketUpdatesEnabled ?? this.marketUpdatesEnabled, // Added to copyWith
+      predictionAlertsEnabled: predictionAlertsEnabled ?? this.predictionAlertsEnabled, // Added to copyWith
+      systemNotificationsEnabled: systemNotificationsEnabled ?? this.systemNotificationsEnabled, // Added to copyWith
       notificationSettings: notificationSettings ?? this.notificationSettings,
       dataSync: dataSync ?? this.dataSync,
       currency: currency ?? this.currency,
@@ -52,6 +68,10 @@ class AppSettings {
       'themeMode': themeMode.index,
       'language': language,
       'notificationsEnabled': notificationsEnabled,
+      'priceAlertsEnabled': priceAlertsEnabled, // Added to toJson
+      'marketUpdatesEnabled': marketUpdatesEnabled, // Added to toJson
+      'predictionAlertsEnabled': predictionAlertsEnabled, // Added to toJson
+      'systemNotificationsEnabled': systemNotificationsEnabled, // Added to toJson
       'notificationSettings': notificationSettings.map((e) => e.toJson()).toList(),
       'dataSync': dataSync,
       'currency': currency,
@@ -66,6 +86,10 @@ class AppSettings {
       themeMode: ThemeMode.values[json['themeMode'] ?? 0],
       language: json['language'] ?? 'English',
       notificationsEnabled: json['notificationsEnabled'] ?? true,
+      priceAlertsEnabled: json['priceAlertsEnabled'] ?? true, // Added to fromJson
+      marketUpdatesEnabled: json['marketUpdatesEnabled'] ?? true, // Added to fromJson
+      predictionAlertsEnabled: json['predictionAlertsEnabled'] ?? true, // Added to fromJson
+      systemNotificationsEnabled: json['systemNotificationsEnabled'] ?? true, // Added to fromJson
       notificationSettings: (json['notificationSettings'] as List?)
           ?.map((e) => NotificationSetting.fromJson(e))
           .toList() ?? [],

@@ -60,7 +60,12 @@ class NotificationScreen extends StatelessWidget {
               itemCount: notifications.length,
               itemBuilder: (context, index) {
                 final notification = notifications[index];
-                return NotificationItem(notification: notification);
+                return NotificationItem(
+                  notification: notification,
+                  onTap: () {
+                    // Define the onTap behavior here
+                  },
+                );
               },
             ),
     );

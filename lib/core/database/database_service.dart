@@ -2,7 +2,9 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../constants/app_constants.dart';
-import '../models/models.dart';
+import '../models/product.dart';
+import '../models/price_data.dart';
+import '../models/price_entry.dart';
 import '../services/service_locator.dart';
 import '../utils/app_logger.dart';
 

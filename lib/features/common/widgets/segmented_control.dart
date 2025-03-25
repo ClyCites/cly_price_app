@@ -10,7 +10,7 @@ class SegmentedControl<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<T>(
-      segments: children.entries.map((e) => ButtonSegment<T>(value: e.key, label: e.value)).toSet(),
+      segments: children.entries.map((e) => ButtonSegment<T>(value: e.key, label: e.value)).toList(),
       selected: {groupValue},
       onSelectionChanged: (Set<T> newSelection) {
         onValueChanged(newSelection.first);

@@ -36,12 +36,10 @@ class ProfileScreen extends StatelessWidget {
             ProfileHeader(user: userProvider.currentUser!),
             SizedBox(height: 16),
             SettingsSection(
-              onSettingsTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SettingsScreen()),
-                );
-              },
+              title: 'Settings',
+              items: [
+                // Add your settings items here
+              ],
             ),
           ],
         ),

@@ -1,121 +1,78 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 class SettingsSection extends StatelessWidget {
-  final VoidCallback onSettingsTap;
+  final String title;
+  final List<Map<String, dynamic>> items;
 
   const SettingsSection({
     Key? key,
-    required this.onSettingsTap,
+    required this.title,
+    required this.items,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildSectionHeader(context, 'Account Settings'),
-          _buildSettingsItem(
-            context,
-            'Personal Information',
-            Icons.person_outline,
-            () {},
-          ),
-          _buildSettingsItem(
-            context,
-            'Notification Preferences',
-            Icons.notifications_none,
-            () {},
-          ),
-          _buildSettingsItem(
-            context,
-            'Privacy & Security',
-            Icons.security,
-            () {},
-          ),
-          _buildSettingsItem(
-            context,
-            'App Settings',
-            Icons.settings,
-            onSettingsTap,
-          ),
-          _buildSettingsItem(
-            context,
-            'Help & Support',
-            Icons.help_outline,
-            () {},
-          ),
-          _buildSettingsItem(
-            context,
-            'About',
-            Icons.info_outline,
-            () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section title
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+          child: Text(
             title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+              color: Colors.grey.shade700,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsItem(
-    BuildContext context,
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.chevron_right,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            ),
-          ],
         ),
-      ),
+        
+        // Settings items
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
+          child: ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: items.length,
+            separatorBuilder: (context, index) => Divider(
+              height: 1,
+              color: Colors.grey.shade200,
+              indent: 56,
+            ),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return ListTile(
+                leading: Icon(
+                  item['icon'] as IconData,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  item['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
+                onTap: () {
+                  // Navigate to respective settings screen
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

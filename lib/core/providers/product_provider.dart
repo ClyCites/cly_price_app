@@ -5,12 +5,14 @@ import '../models/price_data.dart'; // Ensure PriceData class is imported
 import '../models/price_entry.dart'; // Ensure PriceEntry class is imported
 import '../models/product.dart'; // Ensure Product class is imported
 import '../services/service_locator.dart';
+import '../api/api_service.dart';
 
 class ProductProvider with ChangeNotifier {
   List<Product> _products = [];
   List<PriceData> _priceData = [];
   List<Product> _trendingProducts = [];
   List<String> _markets = [];
+  final ApiService _apiService = ApiService();
 
   double _currentPrice = 0;
   double _priceChange = 0;
@@ -23,6 +25,8 @@ class ProductProvider with ChangeNotifier {
   List<PriceData> get priceData => _priceData;
   List<Product> get trendingProducts => _trendingProducts;
   List<String> get markets => _markets;
+  ApiService get apiService => _apiService;
+  
 
   double get currentPrice => _currentPrice;
   double get priceChange => _priceChange;
@@ -34,21 +38,22 @@ class ProductProvider with ChangeNotifier {
   Future<void> fetchProducts() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       final products = await serviceLocator.apiService.getProducts();
       _products = products;
-      
+
       // Cache products locally
       await serviceLocator.databaseService.cacheProducts(products);
-      
+
       _isOffline = false;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       // If API fails, try to load from local cache
       try {
-        final cachedProducts = await serviceLocator.databaseService.getCachedProducts();
+        final cachedProducts =
+            await serviceLocator.databaseService.getCachedProducts();
         _products = cachedProducts;
         _isOffline = true;
         _isLoading = false;
@@ -64,18 +69,30 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+  Future<List<Map<String, dynamic>>> compareMarketPrices(
+      String productName) async {
+    // Implement the method to compare market prices
+    // This is a placeholder implementation
+    await Future.delayed(Duration(seconds: 2));
+    return [
+      {'market': 'Market 1', 'price': 100},
+      {'market': 'Market 2', 'price': 110},
+    ];
+  }
+
   Future<void> fetchPriceData(String product, String timeframe) async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
-      final data = await serviceLocator.apiService.getPriceData(product, timeframe);
+      final data =
+          await serviceLocator.apiService.getPriceData(product, timeframe);
       _priceData = data;
-      
+
       if (data.isNotEmpty) {
         // Calculate current price and changes
         _currentPrice = data.last.price;
-        
+
         if (data.length > 1) {
           final previousPrice = data[data.length - 2].price;
           _priceChange = _currentPrice - previousPrice;
@@ -85,22 +102,24 @@ class ProductProvider with ChangeNotifier {
           _priceChangePercentage = 0;
         }
       }
-      
+
       // Cache price data locally
-      await serviceLocator.databaseService.cachePriceData(product, timeframe, data);
-      
+      await serviceLocator.databaseService
+          .cachePriceData(product, timeframe, data);
+
       _isOffline = false;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       // If API fails, try to load from local cache
       try {
-        final cachedData = await serviceLocator.databaseService.getCachedPriceData(product, timeframe);
+        final cachedData = await serviceLocator.databaseService
+            .getCachedPriceData(product, timeframe);
         _priceData = cachedData;
-        
+
         if (cachedData.isNotEmpty) {
           _currentPrice = cachedData.last.price;
-          
+
           if (cachedData.length > 1) {
             final previousPrice = cachedData[cachedData.length - 2].price;
             _priceChange = _currentPrice - previousPrice;
@@ -110,7 +129,7 @@ class ProductProvider with ChangeNotifier {
             _priceChangePercentage = 0;
           }
         }
-        
+
         _isOffline = true;
         _isLoading = false;
         notifyListeners();
@@ -126,7 +145,7 @@ class ProductProvider with ChangeNotifier {
         rethrow;
       }
     }
-    
+
     // Also fetch trending products
     await fetchTrendingProducts();
   }
@@ -135,15 +154,16 @@ class ProductProvider with ChangeNotifier {
     try {
       final trending = await serviceLocator.apiService.getTrendingProducts();
       _trendingProducts = trending;
-      
+
       // Cache trending products locally
       await serviceLocator.databaseService.cacheTrendingProducts(trending);
-      
+
       notifyListeners();
     } catch (e) {
       // If API fails, try to load from local cache
       try {
-        final cachedTrending = await serviceLocator.databaseService.getCachedTrendingProducts();
+        final cachedTrending =
+            await serviceLocator.databaseService.getCachedTrendingProducts();
         _trendingProducts = cachedTrending;
         notifyListeners();
       } catch (cacheError) {
@@ -162,7 +182,8 @@ class ProductProvider with ChangeNotifier {
     } catch (e) {
       // If API fails, try to load from local cache
       try {
-        final cachedMarkets = await serviceLocator.databaseService.getCachedMarkets();
+        final cachedMarkets =
+            await serviceLocator.databaseService.getCachedMarkets();
         _markets = cachedMarkets;
         notifyListeners();
       } catch (cacheError) {
@@ -176,17 +197,18 @@ class ProductProvider with ChangeNotifier {
   Future<void> submitPriceEntry(PriceEntry entry) async {
     try {
       // Try to submit to API first
-      final submittedEntry = await serviceLocator.apiService.submitPriceEntry(entry);
-      
+      final submittedEntry =
+          await serviceLocator.apiService.submitPriceEntry(entry);
+
       // Cache the submitted entry locally
       await serviceLocator.databaseService.cachePriceEntry(submittedEntry);
-      
+
       _isOffline = false;
     } catch (e) {
       // If API submission fails, store locally for later sync
       final pendingEntry = entry.copyWith(status: 'pending');
       await serviceLocator.databaseService.storePendingPriceEntry(pendingEntry);
-      
+
       _isOffline = true;
       throw Exception('Stored offline. Will sync when connection is restored.');
     }
@@ -194,19 +216,22 @@ class ProductProvider with ChangeNotifier {
 
   Future<void> syncPendingEntries() async {
     try {
-      final pendingEntries = await serviceLocator.databaseService.getPendingPriceEntries();
-      
+      final pendingEntries =
+          await serviceLocator.databaseService.getPendingPriceEntries();
+
       for (final entry in pendingEntries) {
         try {
-          final submittedEntry = await serviceLocator.apiService.submitPriceEntry(entry);
-          await serviceLocator.databaseService.removePendingPriceEntry(entry.id);
+          final submittedEntry =
+              await serviceLocator.apiService.submitPriceEntry(entry);
+          await serviceLocator.databaseService
+              .removePendingPriceEntry(entry.id);
           await serviceLocator.databaseService.cachePriceEntry(submittedEntry);
         } catch (e) {
           // Skip this entry and try the next one
           continue;
         }
       }
-      
+
       _isOffline = false;
       notifyListeners();
     } catch (e) {
@@ -217,4 +242,3 @@ class ProductProvider with ChangeNotifier {
     }
   }
 }
-

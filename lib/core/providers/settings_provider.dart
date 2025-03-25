@@ -27,6 +27,10 @@ class SettingsProvider with ChangeNotifier {
         type: NotificationType.system,
       ),
     ],
+    priceAlertsEnabled: true,
+    marketUpdatesEnabled: true,
+    predictionAlertsEnabled: true,
+    systemNotificationsEnabled: true,
   );
   bool _isLoading = true;
 
@@ -73,6 +77,10 @@ class SettingsProvider with ChangeNotifier {
               type: NotificationType.system,
             ),
           ],
+          priceAlertsEnabled: true,
+          marketUpdatesEnabled: true,
+          predictionAlertsEnabled: true,
+          systemNotificationsEnabled: true,
         );
         await saveSettings();
       }
@@ -112,6 +120,30 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePriceAlertsEnabled(bool enabled) {
+    _settings = _settings.copyWith(priceAlertsEnabled: enabled);
+    saveSettings();
+    notifyListeners();
+  }
+
+  void updateMarketUpdatesEnabled(bool enabled) {
+    _settings = _settings.copyWith(marketUpdatesEnabled: enabled);
+    saveSettings();
+    notifyListeners();
+  }
+
+  void updatePredictionAlertsEnabled(bool enabled) {
+    _settings = _settings.copyWith(predictionAlertsEnabled: enabled);
+    saveSettings();
+    notifyListeners();
+  }
+
+  void updateSystemNotificationsEnabled(bool enabled) {
+    _settings = _settings.copyWith(systemNotificationsEnabled: enabled);
+    saveSettings();
+    notifyListeners();
+  }
+
   void updateNotificationSetting(String id, bool enabled) {
     final updatedSettings = _settings.notificationSettings.map((setting) {
       if (setting.id == id) {
@@ -121,6 +153,18 @@ class SettingsProvider with ChangeNotifier {
     }).toList();
 
     _settings = _settings.copyWith(notificationSettings: updatedSettings);
+    
+    // Also update the direct properties based on the ID
+    if (id == 'price_alerts') {
+      _settings = _settings.copyWith(priceAlertsEnabled: enabled);
+    } else if (id == 'market_updates') {
+      _settings = _settings.copyWith(marketUpdatesEnabled: enabled);
+    } else if (id == 'predictions') {
+      _settings = _settings.copyWith(predictionAlertsEnabled: enabled);
+    } else if (id == 'system') {
+      _settings = _settings.copyWith(systemNotificationsEnabled: enabled);
+    }
+    
     saveSettings();
     notifyListeners();
   }
@@ -197,6 +241,10 @@ class SettingsProvider with ChangeNotifier {
           type: NotificationType.system,
         ),
       ],
+      priceAlertsEnabled: true,
+      marketUpdatesEnabled: true,
+      predictionAlertsEnabled: true,
+      systemNotificationsEnabled: true,
     );
     saveSettings();
     notifyListeners();
