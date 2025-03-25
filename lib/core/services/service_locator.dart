@@ -13,7 +13,7 @@ class _ServiceLocator {
   late ApiService _apiService;
   late DatabaseService _databaseService;
   late Logger _logger;
-  
+
   SharedPreferences get preferences => _preferences;
   ApiService get apiService => _apiService;
   DatabaseService get databaseService => _databaseService;
@@ -21,17 +21,21 @@ class _ServiceLocator {
 }
 
 Future<void> setupServiceLocator() async {
-  // Initialize shared preferences
-  serviceLocator._preferences = await SharedPreferences.getInstance();
-  
-  // Initialize logger
-  serviceLocator._logger = AppLogger.instance;
-  
-  // Initialize database service
-  serviceLocator._databaseService = DatabaseService();
-  await serviceLocator._databaseService.initialize();
-  
-  // Initialize API service
-  serviceLocator._apiService = ApiService();
+  try {
+    // Initialize shared preferences
+    serviceLocator._preferences = await SharedPreferences.getInstance();
+    
+    // Initialize logger
+    serviceLocator._logger = AppLogger.instance;
+    
+    // Initialize database service
+    serviceLocator._databaseService = DatabaseService();
+    await serviceLocator._databaseService.initialize();
+    
+    // Initialize API service
+    serviceLocator._apiService = ApiService();
+  } catch (e) {
+    serviceLocator._logger.e("Error initializing services: $e");
+    rethrow;  // Re-throw the error for potential further handling
+  }
 }
-

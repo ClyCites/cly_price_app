@@ -1,6 +1,6 @@
 class AppConstants {
   // API
-  static const String apiBaseUrl = 'https://api.clycites.com/v1';
+  static const String apiBaseUrl = 'https://clyapi.onrender.com/api';
   
   // Database
   static const String dbName = 'clycites_db';
@@ -18,6 +18,9 @@ class AppConstants {
   static const String prefLastSync = 'last_sync';
   static const String prefToken = 'auth_token';
   static const String prefUserId = 'user_id';
+  static const String prefUserName = 'user_name';
+  static const String prefUserEmail = 'user_email';
+  static const String prefUserRole = 'user_role';
   
   // Notifications
   static const String notificationChannelId = 'clycites_channel';

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../core/providers/providers.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -31,28 +31,37 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       curve: Curves.easeInOut,
     );
     _controller.forward();
-    
-    Timer(const Duration(seconds: 3), () {
-      checkAuthAndNavigate();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthAndNavigate();
     });
   }
 
-  void checkAuthAndNavigate() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await authProvider.checkAuthStatus();
-    
-    if (mounted) {
-      if (authProvider.isAuthenticated) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardScreen())
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen())
-        );
+  void _checkAuthAndNavigate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint("Checking authentication status...");
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        debugPrint("AuthProvider fetched successfully.");
+        
+        await authProvider.checkAuthStatus();
+        debugPrint("Auth status: ${authProvider.isAuthenticated}");
+
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => authProvider.isAuthenticated
+                  ? const DashboardScreen()
+                  : const LoginScreen(),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint("Error in _checkAuthAndNavigate: $e");
       }
-    }
+    });
   }
+
 
   @override
   void dispose() {
@@ -80,7 +89,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             children: [
               const Spacer(),
               
-              // Logo and App Name
               Animate(
                 effects: const [
                   FadeEffect(duration: Duration(milliseconds: 800)),
@@ -114,10 +122,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               
               Animate(
                 effects: const [
-                  FadeEffect(
-                    duration: Duration(milliseconds: 800),
-                    delay: Duration(milliseconds: 400),
-                  ),
+                  FadeEffect(duration: Duration(milliseconds: 400), delay: Duration(milliseconds: 400)),
                 ],
                 child: Text(
                   'ClyCites',
@@ -129,37 +134,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
               ),
               
-              const SizedBox(height: 8),
-              
-              Animate(
-                effects: const [
-                  FadeEffect(
-                    duration: Duration(milliseconds: 800),
-                    delay: Duration(milliseconds: 600),
-                  ),
-                ],
-                child: Text(
-                  'Agricultural Price Intelligence',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              
               const Spacer(),
-              
-              // Loading indicator
-              Animate(
-                effects: const [
-                  FadeEffect(
-                    duration: Duration(milliseconds: 800),
-                    delay: Duration(milliseconds: 800),
-                  ),
-                ],
-                child: const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
               
               const SizedBox(height: 40),
@@ -170,4 +148,3 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
   }
 }
-
