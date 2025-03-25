@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomDraggable<T> extends StatelessWidget {
+class CustomDraggable<T extends Object> extends StatelessWidget {
   final Widget child;
   final T data;
   final Widget? feedback;

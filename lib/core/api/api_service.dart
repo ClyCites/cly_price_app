@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_constants.dart';
 import '../models/models.dart';
+import '../models/user.dart'; // Add this line to import the User class
+import '../models/product.dart'; // Add this line to import the Product class
+import '../models/price_data.dart'; // Add this line to import the PriceData class
+import '../models/price_entry.dart'; // Add this line to import the PriceEntry class
 import '../services/service_locator.dart';
 import '../utils/app_logger.dart';
 

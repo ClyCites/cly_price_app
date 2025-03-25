@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class CustomPhysicalModel extends StatelessWidget {
   final Widget child;
-  final ShapeBorder shape;
+  final BoxShape shape;
   final Clip clipBehavior;
   final Color color;
   final Color shadowColor;

@@ -7,6 +7,7 @@ class User {
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? profilePicture;
 
   User({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
+    this.profilePicture,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class User {
       isActive: json['isActive'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
+      profilePicture: json['profilePicture'],
     );
   }
 
@@ -39,6 +42,7 @@ class User {
       'role': role,
       'permissions': permissions,
       'isActive': isActive,
+      
     };
   }
 }

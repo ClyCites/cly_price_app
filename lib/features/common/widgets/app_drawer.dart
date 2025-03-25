@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/providers/auth_provider.dart';
-import '../../core/providers/theme_provider.dart';
-import '../../core/services/service_locator.dart';
-import '../../features/settings/settings_screen.dart';
-import '../../features/notifications/notifications_screen.dart';
-import '../../features/profile/profile_screen.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/theme_provider.dart';
+import '../../../core/services/service_locator.dart';
+import '../../../features/settings/settings_screen.dart';
+import '../../../features/notifications/notifications_screen.dart';
+import '../../../features/profile/profile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});

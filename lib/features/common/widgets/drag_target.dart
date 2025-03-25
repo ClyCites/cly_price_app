@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomDragTarget<T> extends StatelessWidget {
+class CustomDragTarget<T extends Object> extends StatelessWidget {
   final Widget builder;
   final Function(T) onAccept;
   
@@ -12,7 +12,7 @@ class CustomDragTarget<T> extends StatelessWidget {
       builder: (BuildContext context, List<dynamic> accepted, List<dynamic> rejected) {
         return builder;
       },
-      onAcceptWithDetails: onAccept,
+      onAcceptWithDetails: (details) => onAccept(details.data),
     );
   }
 }

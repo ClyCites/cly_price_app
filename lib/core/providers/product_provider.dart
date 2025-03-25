@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
+import '../models/price_data.dart'; // Ensure PriceData class is imported
+import '../models/price_entry.dart'; // Ensure PriceEntry class is imported
+import '../models/product.dart'; // Ensure Product class is imported
 import '../services/service_locator.dart';
 
 class ProductProvider with ChangeNotifier {

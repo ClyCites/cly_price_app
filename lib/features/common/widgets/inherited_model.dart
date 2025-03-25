@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomInheritedModel extends InheritedModel {
+class CustomInheritedModel extends InheritedModel<Object> {
   const CustomInheritedModel({super.key, required super.child});
 
   @override
@@ -9,7 +9,7 @@ class CustomInheritedModel extends InheritedModel {
   }
 
   @override
-  bool updateShouldNotifyDependentScope(InheritedModel oldWidget, Set<Object> dependencies) {
+  bool updateShouldNotifyDependent(InheritedModel<Object> oldWidget, Set<Object> dependencies) {
     return false;
   }
 }
