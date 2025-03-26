@@ -4,10 +4,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/providers/product_provider.dart';
+import '../../core/providers/market_provider.dart';
+import '../../core/theme/app_colors.dart';
 import 'widgets/price_chart.dart';
 import 'widgets/price_summary.dart';
 import 'widgets/product_selector.dart';
 import 'widgets/trending_products.dart';
+import 'widgets/market_summary.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initializeData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final marketProvider = Provider.of<MarketProvider>(context, listen: false);
     
     if (productProvider.products.isNotEmpty && _selectedProduct.isEmpty) {
       setState(() {
@@ -35,13 +39,17 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       
       await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+      await marketProvider.fetchMarketsByProduct(_selectedProduct);
     }
   }
 
   Future<void> _refreshData() async {
     if (_selectedProduct.isNotEmpty) {
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
+      final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+      
       await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+      await marketProvider.fetchMarketsByProduct(_selectedProduct);
     }
   }
 
@@ -51,7 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+    
     productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+    marketProvider.fetchMarketsByProduct(_selectedProduct);
   }
 
   void _onTimeframeChanged(String timeframe) {
@@ -175,6 +186,26 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Market Summary
+              Animate(
+                effects: const [
+                  FadeEffect(
+                    duration: Duration(milliseconds: 600),
+                    delay: Duration(milliseconds: 300),
+                  ),
+                  SlideEffect(
+                    begin: Offset(0, 0.1),
+                    end: Offset.zero,
+                    duration: Duration(milliseconds: 600),
+                    delay: Duration(milliseconds: 300),
+                  ),
+                ],
+                child: MarketSummary(
+                  productName: _selectedProduct,
                 ),
               ),
               const SizedBox(height: 24),
