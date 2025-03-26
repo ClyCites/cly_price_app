@@ -88,6 +88,14 @@ class MarketProvider with ChangeNotifier {
 
   // Fetch market comparisons for a product
   Future<void> fetchMarketsByProduct(String productName) async {
+    // Don't proceed if product name is empty
+    if (productName.isEmpty) {
+      _setError(true, 'Product name cannot be empty');
+      _marketComparisons = _getMockMarketComparisons('Default');
+      notifyListeners();
+      return;
+    }
+
     _setLoading(true);
     
     try {
@@ -101,13 +109,10 @@ class MarketProvider with ChangeNotifier {
       serviceLocator.logger.e('Error fetching market comparisons: $e');
       _setLoading(false);
       _setError(true, 'Failed to load market comparisons: $e');
-      notifyListeners();
       
-      // If API fails, use mock data in development
-      if (kDebugMode) {
-        _marketComparisons = _getMockMarketComparisons(productName);
-        notifyListeners();
-      }
+      // Always use mock data when API fails
+      _marketComparisons = _getMockMarketComparisons(productName);
+      notifyListeners();
     }
   }
 

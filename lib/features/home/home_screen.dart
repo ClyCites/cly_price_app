@@ -29,15 +29,26 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeData();
   }
 
+  // Update the _initializeData method to ensure we have a valid product name
   Future<void> _initializeData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     final marketProvider = Provider.of<MarketProvider>(context, listen: false);
     
+    // First fetch markets to populate the list
+    await marketProvider.fetchMarkets();
+    
+    // Then fetch products if needed
+    if (productProvider.products.isEmpty) {
+      await productProvider.fetchProducts();
+    }
+    
+    // Only set selected product if we have products and it's not already set
     if (productProvider.products.isNotEmpty && _selectedProduct.isEmpty) {
       setState(() {
         _selectedProduct = productProvider.products.first.name;
       });
       
+      // Now fetch price data and market data with a valid product name
       await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
       await marketProvider.fetchMarketsByProduct(_selectedProduct);
     }
@@ -49,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final marketProvider = Provider.of<MarketProvider>(context, listen: false);
       
       await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
-      await marketProvider.fetchMarketsByProduct(_selectedProduct);
+      await marketProvider.fetchMarkets(forceRefresh: true);
     }
   }
 
@@ -59,10 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    final marketProvider = Provider.of<MarketProvider>(context, listen: false);
-    
     productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
-    marketProvider.fetchMarketsByProduct(_selectedProduct);
   }
 
   void _onTimeframeChanged(String timeframe) {

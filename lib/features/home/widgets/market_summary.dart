@@ -15,6 +15,11 @@ class MarketSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Don't attempt to fetch data if product name is empty
+    if (productName.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
     final marketProvider = Provider.of<MarketProvider>(context);
     
     if (marketProvider.isLoading) {
@@ -300,6 +305,59 @@ class MarketSummary extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Market Summary',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.storefront_outlined,
+                    color: Colors.grey.shade400,
+                    size: 48,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No Product Selected',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Please select a product to view market data',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

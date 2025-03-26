@@ -9,6 +9,7 @@ import 'core/providers/notification_provider.dart';
 import 'core/providers/connectivity_provider.dart';  // Import ConnectivityProvider
 import 'core/services/service_locator.dart';
 import 'features/splash/splash_screen.dart';
+import 'core/providers/market_provider.dart'; // Add this line to import the MarketProvider class
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => PredictionProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()), // Add ConnectivityProvider
       ],
       child: Consumer<SettingsProvider>(
