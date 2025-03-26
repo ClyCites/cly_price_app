@@ -188,7 +188,7 @@ class ApiService {
   // ==================
 
   Future<List<Product>> getProducts() async {
-    final data = await _get('products');
+    final data = await _get('prices');
     return List<Product>.from(data.map((json) => Product.fromJson(json)));
   }
 
