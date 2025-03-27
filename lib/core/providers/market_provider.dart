@@ -86,6 +86,78 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
+  // Add a new market
+  Future<void> addMarket(Market market) async {
+    _setLoading(true);
+    
+    try {
+      // Try to add to API
+      final apiService = serviceLocator.apiService;
+      final addedMarket = await apiService.createMarket(market);
+      
+      // Add to local list
+      _markets.add(addedMarket);
+      
+      // Update cache
+      await _saveMarketsToCache(_markets);
+      
+      _setLoading(false);
+      _setError(false, null);
+      notifyListeners();
+    } catch (e) {
+      serviceLocator.logger.e('Error adding market: $e');
+      
+      // In development or if API fails, still add to local list
+      if (kDebugMode) {
+        _markets.add(market);
+        await _saveMarketsToCache(_markets);
+        _setLoading(false);
+        notifyListeners();
+      } else {
+        _setLoading(false);
+        _setError(true, 'Failed to add market: $e');
+        notifyListeners();
+        throw e; // Re-throw to handle in UI
+      }
+    }
+  }
+
+  // Delete a market
+  Future<void> deleteMarket(String id) async {
+    _setLoading(true);
+    
+    try {
+      // Try to delete from API
+      final apiService = serviceLocator.apiService;
+      await apiService.deleteMarket(id);
+      
+      // Remove from local list
+      _markets.removeWhere((market) => market.id == id);
+      
+      // Update cache
+      await _saveMarketsToCache(_markets);
+      
+      _setLoading(false);
+      _setError(false, null);
+      notifyListeners();
+    } catch (e) {
+      serviceLocator.logger.e('Error deleting market: $e');
+      
+      // In development or if API fails, still remove from local list
+      if (kDebugMode) {
+        _markets.removeWhere((market) => market.id == id);
+        await _saveMarketsToCache(_markets);
+        _setLoading(false);
+        notifyListeners();
+      } else {
+        _setLoading(false);
+        _setError(true, 'Failed to delete market: $e');
+        notifyListeners();
+        throw e; // Re-throw to handle in UI
+      }
+    }
+  }
+
   // Fetch market comparisons for a product
   Future<void> fetchMarketsByProduct(String productName) async {
     // Don't proceed if product name is empty
@@ -295,6 +367,8 @@ class MarketProvider with ChangeNotifier {
         longitude: 32.5811,
         isActive: true,
         lastUpdated: DateTime.now(),
+        contactInfo: '+256 701 234567',
+        description: 'The largest market in Kampala with a wide variety of agricultural products.',
       ),
       Market(
         id: '2',
@@ -306,6 +380,8 @@ class MarketProvider with ChangeNotifier {
         longitude: 32.5767,
         isActive: true,
         lastUpdated: DateTime.now(),
+        contactInfo: '+256 702 345678',
+        description: 'A premium market known for high-quality fresh produce.',
       ),
       Market(
         id: '3',
@@ -317,6 +393,8 @@ class MarketProvider with ChangeNotifier {
         longitude: 32.5844,
         isActive: true,
         lastUpdated: DateTime.now(),
+        contactInfo: '+256 703 456789',
+        description: 'A bustling market with affordable prices for all products.',
       ),
       Market(
         id: '4',
@@ -328,6 +406,8 @@ class MarketProvider with ChangeNotifier {
         longitude: 32.5728,
         isActive: true,
         lastUpdated: DateTime.now(),
+        contactInfo: '+256 704 567890',
+        description: 'Known for wholesale agricultural products at competitive prices.',
       ),
       Market(
         id: '5',
@@ -339,6 +419,8 @@ class MarketProvider with ChangeNotifier {
         longitude: 32.5744,
         isActive: true,
         lastUpdated: DateTime.now(),
+        contactInfo: '+256 705 678901',
+        description: 'A convenient market near the university with fresh produce.',
       ),
     ];
   }

@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../core/models/models.dart';
 import '../../core/providers/product_provider.dart';
+import '../../core/models/product.dart';
+import '../../core/providers/market_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../common/widgets/loading_indicator.dart';
+import '../common/widgets/error_view.dart';
+import '../common/widgets/empty_state.dart';
 import 'widgets/market_comparison_chart.dart';
 import 'widgets/market_list.dart';
+import 'add_market_screen.dart';
 
 class MarketsScreen extends StatefulWidget {
-  const MarketsScreen({super.key});
+  const MarketsScreen({Key? key}) : super(key: key);
 
   @override
   State<MarketsScreen> createState() => _MarketsScreenState();
@@ -16,8 +22,9 @@ class MarketsScreen extends StatefulWidget {
 
 class _MarketsScreenState extends State<MarketsScreen> {
   String _selectedProduct = '';
-  List<Map<String, dynamic>> _marketComparison = [];
+  List<Map<String, dynamic>> _marketComparisons = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -28,40 +35,36 @@ class _MarketsScreenState extends State<MarketsScreen> {
   Future<void> _initializeData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     
-    if (productProvider.products.isNotEmpty && _selectedProduct.isEmpty) {
+    if (productProvider.products.isNotEmpty) {
       setState(() {
         _selectedProduct = productProvider.products.first.name;
+        _isLoading = true;
       });
       
-      await _fetchMarketComparison();
+      await _loadMarketComparisons();
     }
   }
 
-  Future<void> _fetchMarketComparison() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+  Future<void> _loadMarketComparisons() async {
     try {
-      final productProvider = Provider.of<ProductProvider>(context, listen: false);
-      final comparison = await productProvider.compareMarketPrices(_selectedProduct);
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      
+      final comparisons = await Provider.of<ProductProvider>(context, listen: false)
+          .apiService
+          .compareMarketPrices(_selectedProduct);
       
       setState(() {
-        _marketComparison = comparison;
+        _marketComparisons = comparisons;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
+        _errorMessage = 'Failed to load market comparisons: ${e.toString()}';
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to fetch market comparison: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -69,30 +72,66 @@ class _MarketsScreenState extends State<MarketsScreen> {
     setState(() {
       _selectedProduct = product;
     });
-    _fetchMarketComparison();
+    _loadMarketComparisons();
   }
 
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
+    final List<Product> products = productProvider.products;
     
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Selector
-            Animate(
-              effects: const [
-                FadeEffect(duration: Duration(milliseconds: 600)),
-                SlideEffect(
-                  begin: Offset(0, 0.1),
-                  end: Offset.zero,
-                  duration: Duration(milliseconds: 600),
-                ),
-              ],
-              child: Container(
+    if (products.isEmpty) {
+      return const Center(
+        child: Text('No products available'),
+      );
+    }
+    
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with Add Market button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Markets',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AddMarketScreen(),
+                        ),
+                      );
+                      
+                      if (result == true) {
+                        // Refresh markets list
+                        final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+                        marketProvider.fetchMarkets(forceRefresh: true);
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Market'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Product selector
+              Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
@@ -100,7 +139,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: _selectedProduct,
+                    value: _selectedProduct.isEmpty ? products.first.name : _selectedProduct,
                     isExpanded: true,
                     icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
                     style: const TextStyle(
@@ -108,7 +147,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
-                    items: productProvider.products.map((product) {
+                    items: products.map((Product product) {
                       return DropdownMenuItem<String>(
                         value: product.name,
                         child: Text(product.name),
@@ -122,92 +161,66 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Market Comparison Chart
-            Animate(
-              effects: const [
-                FadeEffect(
-                  duration: Duration(milliseconds: 600),
-                  delay: Duration(milliseconds: 200),
-                ),
-                SlideEffect(
-                  begin: Offset(0, 0.1),
-                  end: Offset.zero,
-                  duration: Duration(milliseconds: 600),
-                  delay: Duration(milliseconds: 200),
-                ),
-              ],
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Market Price Comparison',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 300,
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : MarketComparisonChart(
-                                data: _marketComparison,
-                                product: _selectedProduct,
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
+              
+              const SizedBox(height: 24),
+              
+              // Market comparison content
+              Expanded(
+                child: _buildContent(),
               ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Market List
-            Animate(
-              effects: const [
-                FadeEffect(
-                  duration: Duration(milliseconds: 600),
-                  delay: Duration(milliseconds: 400),
-                ),
-                SlideEffect(
-                  begin: Offset(0, 0.1),
-                  end: Offset.zero,
-                  duration: Duration(milliseconds: 600),
-                  delay: Duration(milliseconds: 400),
-                ),
-              ],
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Markets',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  MarketList(
-                    markets: productProvider.markets,
-                    onMarketSelected: (market) {
-                      // TODO: Implement market details navigation
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: LoadingIndicator(),
+      );
+    }
+    
+    if (_errorMessage != null) {
+      return ErrorView(
+        message: _errorMessage!,
+        onRetry: _loadMarketComparisons,
+      );
+    }
+    
+    if (_marketComparisons.isEmpty) {
+      return const EmptyState(
+        icon: Icons.storefront_outlined,
+        title: 'No Market Data',
+        message: 'There is no market comparison data available for this product.',
+      );
+    }
+    
+    return Column(
+      children: [
+        // Market comparison chart
+        Expanded(
+          flex: 2,
+          child: MarketComparisonChart(
+            data: _marketComparisons,
+            product: _selectedProduct,
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Market list
+        Expanded(
+          flex: 3,
+          child: MarketList(
+            markets: [], // Add the appropriate list of markets here
+            onMarketSelected: (market) {
+              // Handle market selection here
+            },
+          ),
+        ),
+      ],
     );
   }
 }

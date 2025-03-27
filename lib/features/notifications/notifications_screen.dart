@@ -67,7 +67,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           TextButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              provider.clearAllNotifications(); // Fixed method name here
+                              provider.clearAll(); // Fixed method name here
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('All notifications cleared')),
                               );

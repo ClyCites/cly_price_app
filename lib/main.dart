@@ -39,7 +39,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PredictionProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
-        ChangeNotifierProvider(create: (_) => ConnectivityProvider()), // Add ConnectivityProvider
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (_) => serviceLocator.notificationProvider),
+        ChangeNotifierProvider(create: (_) => serviceLocator.priceAlertProvider),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settingsProvider, _) {

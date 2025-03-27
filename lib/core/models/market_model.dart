@@ -10,6 +10,9 @@ class Market {
   final DateTime? lastUpdated;
   final double? currentPrice;
   final String? productId;
+  final String? contactInfo;
+  final String? description;
+  final String? imageUrl;
 
   Market({
     required this.id,
@@ -23,6 +26,9 @@ class Market {
     this.lastUpdated,
     this.currentPrice,
     this.productId,
+    this.contactInfo,
+    this.description,
+    this.imageUrl,
   });
 
   Market copyWith({
@@ -37,6 +43,9 @@ class Market {
     DateTime? lastUpdated,
     double? currentPrice,
     String? productId,
+    String? contactInfo,
+    String? description,
+    String? imageUrl,
   }) {
     return Market(
       id: id ?? this.id,
@@ -50,6 +59,9 @@ class Market {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       currentPrice: currentPrice ?? this.currentPrice,
       productId: productId ?? this.productId,
+      contactInfo: contactInfo ?? this.contactInfo,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -66,6 +78,9 @@ class Market {
       'lastUpdated': lastUpdated?.toIso8601String(),
       'currentPrice': currentPrice,
       'productId': productId,
+      'contactInfo': contactInfo,
+      'description': description,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -82,6 +97,9 @@ class Market {
       lastUpdated: json['lastUpdated'] != null ? DateTime.parse(json['lastUpdated']) : null,
       currentPrice: json['currentPrice'] != null ? double.parse(json['currentPrice'].toString()) : null,
       productId: json['productId'],
+      contactInfo: json['contactInfo'],
+      description: json['description'],
+      imageUrl: json['imageUrl'],
     );
   }
 
@@ -92,90 +110,6 @@ class Market {
   @override
   String toString() {
     return 'Market(id: $id, name: $name, location: $location)';
-  }
-}
-
-class MarketPrice {
-  final String marketId;
-  final String marketName;
-  final double price;
-  final DateTime date;
-  final double? volume;
-  final String? unit;
-  final double? trendPercentage;
-
-  MarketPrice({
-    required this.marketId,
-    required this.marketName,
-    required this.price,
-    required this.date,
-    this.volume,
-    this.unit,
-    this.trendPercentage,
-  });
-
-  factory MarketPrice.fromJson(Map<String, dynamic> json) {
-    return MarketPrice(
-      marketId: json['marketId'] ?? json['market'] ?? '',
-      marketName: json['marketName'] ?? '',
-      price: json['price'] != null ? double.parse(json['price'].toString()) : 0.0,
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
-      volume: json['volume'] != null ? double.parse(json['volume'].toString()) : null,
-      unit: json['unit'],
-      trendPercentage: json['trendPercentage'] != null ? double.parse(json['trendPercentage'].toString()) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'marketId': marketId,
-      'marketName': marketName,
-      'price': price,
-      'date': date.toIso8601String(),
-      'volume': volume,
-      'unit': unit,
-      'trendPercentage': trendPercentage,
-    };
-  }
-}
-
-class PriceComparison {
-  final String market;
-  final double price;
-  final String? date;
-  final double? volume;
-  final String? unit;
-  final double? trendPercentage;
-
-  PriceComparison({
-    required this.market,
-    required this.price,
-    this.date,
-    this.volume,
-    this.unit,
-    this.trendPercentage,
-  });
-
-  factory PriceComparison.fromJson(Map<String, dynamic> json) {
-    return PriceComparison(
-      market: json['market'] ?? '',
-      price: json['price'] != null ? double.parse(json['price'].toString()) : 0.0,
-      date: json['date'],
-      volume: json['volume'] != null ? double.parse(json['volume'].toString()) : null,
-      unit: json['unit'],
-      trendPercentage: json['trendPercentage'] != null ? double.parse(json['trendPercentage'].toString()) : null,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'market': market,
-      'price': price,
-      'date': date,
-      'volume': volume,
-      'unit': unit,
-      'trendPercentage': trendPercentage,
-    };
   }
 }
 

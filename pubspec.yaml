@@ -37,6 +37,9 @@ dependencies:
   # Location
   geolocator: ^10.1.0
   geocoding: ^2.1.1
+
+  flutter_local_notifications: ^13.0.0
+  timezone: ^0.9.1
   
   # Authentication
   jwt_decoder: ^2.0.1

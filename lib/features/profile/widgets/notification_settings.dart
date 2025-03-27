@@ -86,7 +86,7 @@ class NotificationSettingsWidget extends StatelessWidget {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          notificationProvider.clearAllNotifications(); // Fixed method name here
+                          notificationProvider.clearAll(); // Fixed method name here
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('All notifications cleared')),
                           );
