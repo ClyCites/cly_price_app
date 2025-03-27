@@ -13,19 +13,22 @@ class ConnectivityProvider with ChangeNotifier {
   
   Future<void> _initConnectivity() async {
     try {
-      final result = await Connectivity().checkConnectivity();
-      _updateConnectionStatus(result);
+      final List<ConnectivityResult> results = await Connectivity().checkConnectivity();
+      final ConnectivityResult result = results.isNotEmpty ? results.first : ConnectivityResult.none;
+      _updateConnectionStatus([result]);
     } catch (e) {
       _isConnected = false;
     }
   }
   
   void _setupConnectivityListener() {
-    Connectivity().onConnectivityChanged.listen(_updateConnectionStatus);
+    Connectivity().onConnectivityChanged.listen((results) {
+      _updateConnectionStatus(results);
+    });
   }
   
-  void _updateConnectionStatus(ConnectivityResult result) {
-    _isConnected = result != ConnectivityResult.none;
+  void _updateConnectionStatus(List<ConnectivityResult> results) {
+    _isConnected = results.isNotEmpty && results.any((result) => result != ConnectivityResult.none);
     notifyListeners();
   }
 }

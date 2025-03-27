@@ -120,7 +120,7 @@ class PredictionChart extends StatelessWidget {
                 LineChartData(
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                      // tooltipBackgroundColor: Colors.blueGrey.withOpacity(0.8),
                     ),
                     touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {},
                     handleBuiltInTouches: true,

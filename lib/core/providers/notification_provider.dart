@@ -48,9 +48,7 @@ class NotificationProvider with ChangeNotifier {
         requestAlertPermission: true,
         requestBadgePermission: true,
         requestSoundPermission: true,
-        onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
-          // Handle iOS foreground notification
-        },
+        // Removed onDidReceiveLocalNotification as it is no longer supported
       );
       
       final InitializationSettings initializationSettings = InitializationSettings(
@@ -432,9 +430,7 @@ class NotificationProvider with ChangeNotifier {
           presentSound: true,
         ),
       ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exact,
       payload: payload,
     );
   }

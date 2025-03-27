@@ -49,7 +49,6 @@ class MarketComparisonChart extends StatelessWidget {
         minY: minPrice - (priceRange * 0.1),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            tooltipBgColor: Colors.white,
             tooltipRoundedRadius: 8,
             tooltipBorder: BorderSide(
               color: Colors.grey.shade200,
@@ -91,7 +90,7 @@ class MarketComparisonChart extends StatelessWidget {
                   return const SizedBox();
                 }
                 return SideTitleWidget(
-                  axisSide: meta.axisSide,
+                  meta: meta,
                   child: Text(
                     data[value.toInt()]['market'] as String,
                     style: const TextStyle(
@@ -110,7 +109,7 @@ class MarketComparisonChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
 
                 return SideTitleWidget(
-                  axisSide: meta.axisSide,
+                  meta: meta,
                   child: Text(
                     NumberFormat.compact().format(value),
                     style: const TextStyle(

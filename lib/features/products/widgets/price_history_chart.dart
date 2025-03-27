@@ -78,7 +78,7 @@ class PriceHistoryChart extends StatelessWidget {
                 }
                 final date = priceData[value.toInt()].date;
                 return SideTitleWidget(
-                  axisSide: meta.axisSide,
+                  meta: meta,
                   child: Text(
                     _formatDate(date),
                     style: const TextStyle(
@@ -96,7 +96,7 @@ class PriceHistoryChart extends StatelessWidget {
               interval: _getPriceInterval(),
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
-                  axisSide: meta.axisSide,
+                  meta: meta,
                   child: Text(
                     NumberFormat.compact().format(value),
                     style: const TextStyle(
@@ -152,7 +152,6 @@ class PriceHistoryChart extends StatelessWidget {
         ],
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            tooltipBgColor: Colors.white,
             tooltipRoundedRadius: 8,
             tooltipBorder: BorderSide(
               color: Colors.grey.shade200,

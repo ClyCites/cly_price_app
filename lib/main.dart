@@ -10,7 +10,6 @@ import 'core/providers/connectivity_provider.dart';  // Import ConnectivityProvi
 import 'core/services/service_locator.dart';
 import 'features/splash/splash_screen.dart';
 import 'core/providers/market_provider.dart'; // Add this line to import the MarketProvider class
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
