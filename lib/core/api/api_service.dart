@@ -20,7 +20,7 @@ class ApiService {
   // Helper method to get auth token
   Future<String?> _getToken() async {
     final prefs = serviceLocator.preferences;
-    return prefs.getString('token');
+    return prefs.getString(AppConstants.prefToken);
   }
   
   // Helper method to create headers with auth token
@@ -28,7 +28,7 @@ class ApiService {
     final token = await _getToken();
     return {
       'Content-Type': 'application/json',
-      'Authorization': token != null ? 'Bearer $token' : '',
+      if (token != null) 'Authorization': 'Bearer $token',
     };
   }
   
@@ -114,39 +114,106 @@ class ApiService {
   // Auth API Methods
   // ==================
   
-  Future<Map<String, dynamic>> register(String name, String email, String password) async {
-    final data = await _post('auth/register', {
-      'name': name,
-      'email': email,
-      'password': password,
-    });
-    
-    // Save token if registration includes login
-    if (data['token'] != null) {
-      final prefs = serviceLocator.preferences;
-      await prefs.setString(AppConstants.prefToken, data['token']);
-      if (data['user'] != null && data['user']['_id'] != null) {
-        await prefs.setString(AppConstants.prefUserId, data['user']['_id']);
+  Future<Map<String, dynamic>?> register(String name, String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+      
+      if (response.statusCode == 201) {
+        // Store token
+        final prefs = serviceLocator.preferences;
+        final token = responseData['token'];
+        if (token != null) {
+          await prefs.setString(AppConstants.prefToken, token);
+        }
+        
+        // Store user ID from registration response
+        final userData = responseData['user'] ?? responseData;
+        final userId = userData['_id'] ?? userData['id'];
+        if (userId != null) {
+          await prefs.setString(AppConstants.prefUserId, userId.toString());
+          logger.d('User ID stored from registration: $userId');
+        }
+        
+        // Return user data
+        return userData;
+      } else {
+        throw responseData['message'] ?? 'Registration failed';
       }
+    } catch (e) {
+      logger.e('Register error: $e');
+      throw e.toString();
     }
-    
-    return data;
   }
   
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    final data = await _post('auth/login', {
-      'email': email,
-      'password': password,
-    });
-    
-    // Save token
-    final prefs = serviceLocator.preferences;
-    await prefs.setString(AppConstants.prefToken, data['token']);
-    if (data['user'] != null && data['user']['_id'] != null) {
-      await prefs.setString(AppConstants.prefUserId, data['user']['_id']);
+  Future<Map<String, dynamic>?> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+      logger.d('Login response: $responseData');
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        // Handle nested response structure
+        final userData = responseData['data'];
+        if (userData != null) {
+          // Store token
+          final prefs = serviceLocator.preferences;
+          final token = userData['token'];
+          if (token != null) {
+            await prefs.setString(AppConstants.prefToken, token);
+            logger.d('Token stored: $token');
+          } else {
+            throw 'Token is missing from response';
+          }
+          
+          // Store user ID - this is critical for subsequent API calls
+          final userId = userData['id'] ?? userData['_id'];
+          if (userId != null) {
+            await prefs.setString(AppConstants.prefUserId, userId.toString());
+            logger.d('User ID stored: $userId');
+          } else {
+            throw 'User ID is missing from response';
+          }
+          
+          // Store other user data
+          if (userData['name'] != null) {
+            await prefs.setString(AppConstants.prefUserName, userData['name']);
+          }
+          if (userData['email'] != null) {
+            await prefs.setString(AppConstants.prefUserEmail, userData['email']);
+          }
+          if (userData['role'] != null) {
+            await prefs.setString(AppConstants.prefUserRole, userData['role']);
+          }
+          
+          return userData;
+        } else {
+          throw 'User data is missing from response';
+        }
+      } else {
+        throw responseData['message'] ?? 'Login failed';
+      }
+    } catch (e) {
+      logger.e('Login error: $e');
+      throw e.toString();
     }
-    
-    return data;
   }
   
   Future<void> forgotPassword(String email) async {
@@ -161,9 +228,37 @@ class ApiService {
     });
   }
   
-  Future<User> getUserProfile() async {
-    final data = await _get('auth/profile');
-    return User.fromJson(data);
+  Future<User?> getUserProfile(String userId) async {
+    try {
+      final headers = await _getHeaders();
+      
+      // Use the user ID in the API call
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/profile/$userId'),
+        headers: headers,
+      );
+
+      logger.d('Get profile response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        logger.d('Profile data: $responseData');
+        
+        // Check if response has the expected structure
+        if (responseData is Map<String, dynamic>) {
+          return User.fromJson(responseData);
+        } else {
+          logger.w('Unexpected response format: $responseData');
+          return null;
+        }
+      } else {
+        logger.e('Failed to get user profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      logger.e('Get user profile error: $e');
+      return null;
+    }
   }
   
   Future<void> logout() async {
@@ -305,5 +400,81 @@ class ApiService {
       throw Exception('Failed to delete price alert: ${e.toString()}');
     }
   }
+
+  Future<User?> updateUserProfile({
+  required String userId,
+  String? name,
+  String? email,
+  String? bio,
+  String? phoneNumber,
+  String? location,
+}) async {
+  try {
+    final headers = await _getHeaders();
+    
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: headers,
+      body: jsonEncode({
+        if (name != null) 'name': name,
+        if (email != null) 'email': email,
+        if (bio != null) 'bio': bio,
+        if (phoneNumber != null) 'phoneNumber': phoneNumber,
+        if (location != null) 'location': location,
+      }),
+    );
+    
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      return User.fromJson(responseData);
+    } else {
+      logger.e('Failed to update user profile: ${response.statusCode}');
+      return null;
+    }
+  } catch (e) {
+    logger.e('Update user profile error: $e');
+    return null;
+  }
+}
+
+// Get user preferences
+Future<Map<String, dynamic>> getUserPreferences(String userId) async {
+  try {
+    final headers = await _getHeaders();
+    
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/$userId/preferences'),
+      headers: headers,
+    );
+    
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      logger.e('Failed to get user preferences: ${response.statusCode}');
+      return {};
+    }
+  } catch (e) {
+    logger.e('Get user preferences error: $e');
+    return {};
+  }
+}
+
+// Update user preferences
+Future<bool> updateUserPreferences(String userId, Map<String, dynamic> preferences) async {
+  try {
+    final headers = await _getHeaders();
+    
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$userId/preferences'),
+      headers: headers,
+      body: jsonEncode(preferences),
+    );
+    
+    return response.statusCode == 200;
+  } catch (e) {
+    logger.e('Update user preferences error: $e');
+    return false;
+  }
+}
 }
 

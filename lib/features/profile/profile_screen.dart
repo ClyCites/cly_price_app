@@ -5,11 +5,14 @@ import '../../core/theme/app_theme.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/settings_section.dart';
 import '../settings/settings_screen.dart';
+import '../../core/providers/auth_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    
     
     if (!userProvider.isLoggedIn) {
       return _buildLoginPrompt(context);
@@ -33,7 +36,7 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            ProfileHeader(user: userProvider.currentUser!),
+            ProfileHeader(user: userProvider.user!),
             SizedBox(height: 16),
             SettingsSection(
               title: 'Settings',
@@ -124,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
                   onPressed: userProvider.isLoading
                       ? null
                       : () async {
-                          final success = await userProvider.login(
+                          final success = await authProvider.login(
                             emailController.text,
                             passwordController.text,
                           );

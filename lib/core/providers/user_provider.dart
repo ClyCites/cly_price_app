@@ -1,169 +1,195 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user.dart';
+import '../../core/models/user.dart';
+import '../../core/services/service_locator.dart';
+import '../../core/constants/app_constants.dart';
 
 class UserProvider with ChangeNotifier {
-  User? _currentUser;
+  User? _user;
   bool _isLoading = false;
   String? _error;
 
-  User? get currentUser => _currentUser;
+  User? get user => _user;
   bool get isLoading => _isLoading;
-  bool get isLoggedIn => _currentUser != null;
+  bool get isLoggedIn => _user != null;
   String? get error => _error;
-
-  UserProvider() {
-    _loadUserFromStorage();
+  
+  // Get user ID from shared preferences
+  Future<String?> getUserId() async {
+    final prefs = serviceLocator.preferences;
+    return prefs.getString(AppConstants.prefUserId);
   }
 
-  Future<void> _loadUserFromStorage() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('user_id');
-      final userName = prefs.getString('user_name');
-      final userEmail = prefs.getString('user_email');
-      final userRole = prefs.getString('user_role');
-      final userProfilePic = prefs.getString('user_profile_pic');
-
-      if (userId != null && userName != null && userEmail != null) {
-        _currentUser = User(
-          id: userId,
-          name: userName,
-          email: userEmail,
-          role: userRole ?? 'farmer',
-          permissions: [], // Add appropriate default value
-          isActive: true, // Add appropriate default value
-          createdAt: DateTime.now(), // Add appropriate default value
-          updatedAt: DateTime.now(), // Add appropriate default value
-        );
-      }
-      _error = null;
-    } catch (e) {
-      _error = 'Failed to load user data: ${e.toString()}';
-      print(_error);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+  // Initialize user data
+  Future<void> initialize() async {
+    final userId = await getUserId();
+    if (userId != null) {
+      await fetchUserProfile(userId);
     }
   }
 
-  Future<bool> login(String email, String password) async {
+  // Fetch user profile using ID
+  Future<void> fetchUserProfile(String userId) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // In a real app, you would make an API call here
-      // This is a mock implementation for demonstration
-      await Future.delayed(Duration(seconds: 2)); // Simulate network delay
+      debugPrint("Fetching user profile for ID: $userId");
+      final user = await serviceLocator.apiService.getUserProfile(userId);
       
-      // Mock successful login for demo purposes
-      if (email.isNotEmpty && password.isNotEmpty) {
-        _currentUser = User(
-          id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-          name: email.split('@')[0],
-          email: email,
-          role: 'farmer',
-          permissions: [], // Add appropriate default value
-          isActive: true, // Add appropriate default value
-          createdAt: DateTime.now(), // Add appropriate default value
-          updatedAt: DateTime.now(), // Add appropriate default value
-        );
+      if (user != null) {
+        _user = user;
+        debugPrint("User profile loaded: ${user.name ?? 'Unknown'}");
         
-        // Save user data to local storage
-        final prefs = await SharedPreferences.getInstance();
-        prefs.setString('user_id', _currentUser!.id);
-        prefs.setString('user_name', _currentUser!.name);
-        prefs.setString('user_email', _currentUser!.email);
-        prefs.setString('user_role', _currentUser!.role);
+        // Cache user data in preferences for offline access
+        final prefs = serviceLocator.preferences;
+        if (user.name != null) {
+          await prefs.setString(AppConstants.prefUserName, user.name!);
+        }
+        if (user.email != null) {
+          await prefs.setString(AppConstants.prefUserEmail, user.email!);
+        }
+        if (user.role != null) {
+          await prefs.setString(AppConstants.prefUserRole, user.role!);
+        }
+      } else {
+        debugPrint("Failed to load user profile");
+        _error = "Could not load user profile";
+        
+        // Try to load from cached data
+        await _loadUserFromCache();
+      }
+    } catch (e) {
+      debugPrint("Error fetching user profile: $e");
+      _error = e.toString();
+      
+      // Try to load from cached data
+      await _loadUserFromCache();
+    }
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+  
+  // Load user from cached preferences
+  Future<void> _loadUserFromCache() async {
+    try {
+      final prefs = serviceLocator.preferences;
+      final userId = prefs.getString(AppConstants.prefUserId);
+      final name = prefs.getString(AppConstants.prefUserName);
+      final email = prefs.getString(AppConstants.prefUserEmail);
+      final role = prefs.getString(AppConstants.prefUserRole);
+      
+      if (userId != null) {
+        _user = User(
+          id: userId,
+          name: name,
+          email: email,
+          role: role,
+        );
+        debugPrint("Loaded user from cache: ${_user?.name ?? 'Unknown'}");
+      }
+    } catch (e) {
+      debugPrint("Error loading user from cache: $e");
+    }
+  }
+  
+  // Update user profile
+  Future<bool> updateUserProfile({
+    String? name,
+    String? email,
+    String? bio,
+    String? phoneNumber,
+    String? location,
+  }) async {
+    final userId = await getUserId();
+    if (userId == null) {
+      _error = "User ID not found";
+      notifyListeners();
+      return false;
+    }
+    
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final updatedUser = await serviceLocator.apiService.updateUserProfile(
+        userId: userId,
+        name: name,
+        email: email,
+        bio: bio,
+        phoneNumber: phoneNumber,
+        location: location,
+      );
+      
+      if (updatedUser != null) {
+        _user = updatedUser;
+        
+        // Update cached data
+        final prefs = serviceLocator.preferences;
+        if (updatedUser.name != null) {
+          await prefs.setString(AppConstants.prefUserName, updatedUser.name!);
+        }
+        if (updatedUser.email != null) {
+          await prefs.setString(AppConstants.prefUserEmail, updatedUser.email!);
+        }
         
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _error = 'Invalid email or password';
+        _error = "Failed to update profile";
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = 'Login failed: ${e.toString()}';
+      _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
-
-  Future<void> logout() async {
-    _isLoading = true;
-    notifyListeners();
-
+  
+  // Get user preferences
+  Future<Map<String, dynamic>> getUserPreferences() async {
+    final userId = await getUserId();
+    if (userId == null) {
+      return {};
+    }
+    
     try {
-      // Clear user data from local storage
-      final prefs = await SharedPreferences.getInstance();
-      prefs.remove('user_id');
-      prefs.remove('user_name');
-      prefs.remove('user_email');
-      prefs.remove('user_role');
-      prefs.remove('user_profile_pic');
-
-      _currentUser = null;
+      return await serviceLocator.apiService.getUserPreferences(userId);
     } catch (e) {
-      _error = 'Logout failed: ${e.toString()}';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      debugPrint("Error fetching user preferences: $e");
+      return {};
     }
   }
-
-  Future<bool> updateUserProfile({
-    String? name,
-    String? email,
-    String? profilePicture,
-  }) async {
-    if (_currentUser == null) {
-      _error = 'No user is logged in';
-      notifyListeners();
+  
+  // Update user preferences
+  Future<bool> updateUserPreferences(Map<String, dynamic> preferences) async {
+    final userId = await getUserId();
+    if (userId == null) {
       return false;
     }
-
-    _isLoading = true;
-    notifyListeners();
-
+    
     try {
-      // In a real app, you would make an API call here
-      await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-
-      // Update user data
-      _currentUser = User(
-        id: _currentUser!.id,
-        name: name ?? _currentUser!.name,
-        email: email ?? _currentUser!.email,
-        role: _currentUser!.role,
-        permissions: _currentUser!.permissions,
-        isActive: _currentUser!.isActive,
-        createdAt: _currentUser!.createdAt,
-        updatedAt: DateTime.now(),
-      );
-
-      // Save updated user data to local storage
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('user_name', _currentUser!.name);
-      if (email != null) prefs.setString('user_email', _currentUser!.email);
-      if (profilePicture != null) prefs.setString('user_profile_pic', profilePicture);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
+      return await serviceLocator.apiService.updateUserPreferences(userId, preferences);
     } catch (e) {
-      _error = 'Failed to update profile: ${e.toString()}';
-      _isLoading = false;
-      notifyListeners();
+      debugPrint("Error updating user preferences: $e");
       return false;
     }
+  }
+  
+  // Clear user data (called on logout)
+  void clearUserData() {
+    _user = null;
+    _error = null;
+    notifyListeners();
+  }
+  
+  void clearError() {
+    _error = null;
+    notifyListeners();
   }
 }
-
