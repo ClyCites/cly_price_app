@@ -37,7 +37,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
     
     if (productProvider.products.isNotEmpty) {
       setState(() {
-        _selectedProduct = productProvider.products.first.name;
+        _selectedProduct = productProvider.products.first.id;
         _isLoading = true;
       });
       

@@ -26,7 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const MarketsScreen(),
     const SizedBox(), // Placeholder for FAB
     const PredictionsScreen(),
-    ProfileScreen(),
+    const ProfileScreen(),
   ];
   
   final List<String> _titles = [
