@@ -49,8 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       
       // Now fetch price data and market data with a valid product name
-      await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
-      await marketProvider.fetchMarketsByProduct(_selectedProduct);
+      await productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
+      await marketProvider.fetchMarketsByProduct(productProvider.products.first.id);
     }
   }
 
@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
       final marketProvider = Provider.of<MarketProvider>(context, listen: false);
       
-      await productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+      await productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
       await marketProvider.fetchMarkets(forceRefresh: true);
     }
   }
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+    productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
   }
 
   void _onTimeframeChanged(String timeframe) {
@@ -79,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.fetchPriceData(_selectedProduct, _selectedTimeframe);
+    productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
   }
 
   @override
@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
                 child: MarketSummary(
-                  productName: _selectedProduct,
+                  productName: productProvider.products.first.id,
                 ),
               ),
               const SizedBox(height: 24),

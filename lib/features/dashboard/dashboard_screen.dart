@@ -50,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     if (productProvider.products.isNotEmpty) {
       await productProvider.fetchPriceData(
-        productProvider.products.first.name,
+        productProvider.products.first.id,
         'Week',
       );
     }
