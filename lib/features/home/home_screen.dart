@@ -20,7 +20,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedProduct = '';
+  String _selectedProductId = '';
+  String _selectedProductName = '';
   String _selectedTimeframe = 'Week';
 
   @override
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeData();
   }
 
-  // Update the _initializeData method to ensure we have a valid product name
+  // Initialize data for the screen
   Future<void> _initializeData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     final marketProvider = Provider.of<MarketProvider>(context, listen: false);
@@ -43,34 +44,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     
     // Only set selected product if we have products and it's not already set
-    if (productProvider.products.isNotEmpty && _selectedProduct.isEmpty) {
+    if (productProvider.products.isNotEmpty && _selectedProductId.isEmpty) {
       setState(() {
-        _selectedProduct = productProvider.products.first.name;
+        _selectedProductId = productProvider.products.first.id;
+        _selectedProductName = productProvider.products.first.name;
       });
       
-      // Now fetch price data and market data with a valid product name
-      await productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
-      await marketProvider.fetchMarketsByProduct(productProvider.products.first.id);
+      // Now fetch price data and market data with a valid product ID
+      await productProvider.fetchPriceData(_selectedProductId, _selectedTimeframe);
+      await marketProvider.fetchMarketsByProductId(_selectedProductId);
     }
   }
 
   Future<void> _refreshData() async {
-    if (_selectedProduct.isNotEmpty) {
+    if (_selectedProductId.isNotEmpty) {
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
       final marketProvider = Provider.of<MarketProvider>(context, listen: false);
       
-      await productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
+      await productProvider.fetchPriceData(_selectedProductId, _selectedTimeframe);
       await marketProvider.fetchMarkets(forceRefresh: true);
     }
   }
 
-  void _onProductChanged(String product) {
+  void _onProductChanged(String productId, String productName) {
     setState(() {
-      _selectedProduct = product;
+      _selectedProductId = productId;
+      _selectedProductName = productName;
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
+    productProvider.fetchPriceData(_selectedProductId, _selectedTimeframe);
   }
 
   void _onTimeframeChanged(String timeframe) {
@@ -79,16 +82,17 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
-    productProvider.fetchPriceData(productProvider.products.first.id, _selectedTimeframe);
+    productProvider.fetchPriceData(_selectedProductId, _selectedTimeframe);
   }
 
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     
-    if (_selectedProduct.isEmpty && productProvider.products.isNotEmpty) {
+    if (_selectedProductId.isEmpty && productProvider.products.isNotEmpty) {
       setState(() {
-        _selectedProduct = productProvider.products.first.name;
+        _selectedProductId = productProvider.products.first.id;
+        _selectedProductName = productProvider.products.first.name;
       });
     }
     
@@ -112,8 +116,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
                 child: ProductSelector(
-                  products: productProvider.products.map((p) => p.name).toList(),
-                  selectedProduct: _selectedProduct,
+                  products: productProvider.products,
+                  selectedProductId: _selectedProductId,
                   onProductChanged: _onProductChanged,
                 ),
               ),
@@ -173,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         
                         // Price Summary
                         PriceSummary(
-                          product: _selectedProduct,
+                          product: _selectedProductName,
                           currentPrice: productProvider.currentPrice,
                           priceChange: productProvider.priceChange,
                           priceChangePercentage: productProvider.priceChangePercentage,
@@ -187,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? const Center(child: CircularProgressIndicator())
                               : PriceChart(
                                   priceData: productProvider.priceData,
-                                  product: _selectedProduct,
+                                  product: _selectedProductName,
                                   timeframe: _selectedTimeframe,
                                 ),
                         ),
@@ -213,7 +217,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
                 child: MarketSummary(
-                  productName: productProvider.products.first.id,
+                  productId: _selectedProductId,
+                  productName: _selectedProductName,
                 ),
               ),
               const SizedBox(height: 24),
@@ -244,7 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 16),
                     TrendingProducts(
                       products: productProvider.trendingProducts,
-                      onProductSelected: _onProductChanged,
+                      onProductSelected: (productId, productName) {
+                        _onProductChanged(productId, productName);
+                      },
                     ),
                   ],
                 ),

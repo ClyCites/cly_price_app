@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/models/product.dart';
 
 class ProductSelector extends StatelessWidget {
-  final List<String> products;
-  final String selectedProduct;
-  final Function(String) onProductChanged;
+  final List<Product> products;
+  final String selectedProductId;
+  final Function(String, String) onProductChanged;
 
   const ProductSelector({
-super.key,
+    super.key,
     required this.products,
-    required this.selectedProduct,
+    required this.selectedProductId,
     required this.onProductChanged,
   });
 
@@ -24,7 +25,9 @@ super.key,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: selectedProduct,
+          value: selectedProductId.isEmpty && products.isNotEmpty 
+              ? products.first.id 
+              : selectedProductId,
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
           style: const TextStyle(
@@ -32,15 +35,20 @@ super.key,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
-          items: products.map((String product) {
+          items: products.map((Product product) {
             return DropdownMenuItem<String>(
-              value: product,
-              child: Text(product),
+              value: product.id,
+              child: Text(product.name),
             );
           }).toList(),
           onChanged: (String? newValue) {
             if (newValue != null) {
-              onProductChanged(newValue);
+              // Find the product name for the selected ID
+              final selectedProduct = products.firstWhere(
+                (product) => product.id == newValue,
+                orElse: () => products.first,
+              );
+              onProductChanged(newValue, selectedProduct.name);
             }
           },
         ),

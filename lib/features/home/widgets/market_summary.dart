@@ -3,20 +3,51 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/providers/market_provider.dart';
+import '../../../core/providers/product_provider.dart';
 import '../../../core/theme/app_colors.dart';
 
-class MarketSummary extends StatelessWidget {
+class MarketSummary extends StatefulWidget {
+  final String productId;
   final String productName;
 
   const MarketSummary({
     Key? key,
+    required this.productId,
     required this.productName,
   }) : super(key: key);
 
   @override
+  State<MarketSummary> createState() => _MarketSummaryState();
+}
+
+class _MarketSummaryState extends State<MarketSummary> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.productId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+        marketProvider.fetchMarketsByProductId(widget.productId);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(MarketSummary oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Fetch market data when product changes
+    if (oldWidget.productId != widget.productId && widget.productId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+        marketProvider.fetchMarketsByProductId(widget.productId);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Don't attempt to fetch data if product name is empty
-    if (productName.isEmpty) {
+    // Don't attempt to fetch data if product ID is empty
+    if (widget.productId.isEmpty) {
       return _buildEmptyState(context);
     }
 
@@ -34,14 +65,14 @@ class MarketSummary extends StatelessWidget {
     if (marketProvider.marketComparisons.isEmpty) {
       // Fetch market data if not already loaded
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        marketProvider.fetchMarketsByProduct(productName);
+        marketProvider.fetchMarketsByProductId(widget.productId);
       });
       return _buildLoadingState();
     }
     
-    final cheapestMarket = marketProvider.findCheapestMarket(productName);
-    final expensiveMarket = marketProvider.findMostExpensiveMarket(productName);
-    final avgPrice = marketProvider.getAveragePrice(productName);
+    final cheapestMarket = marketProvider.findCheapestMarket(widget.productId);
+    final expensiveMarket = marketProvider.findMostExpensiveMarket(widget.productId);
+    final avgPrice = marketProvider.getAveragePrice(widget.productId);
     
     return Card(
       elevation: 2,
@@ -111,7 +142,10 @@ class MarketSummary extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${avgPrice.toStringAsFixed(2)} UGX',
+                        NumberFormat.currency(
+                          symbol: 'UGX ',
+                          decimalDigits: 0,
+                        ).format(avgPrice),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -127,7 +161,7 @@ class MarketSummary extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      productName,
+                      widget.productName,
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.primary,
@@ -181,7 +215,7 @@ class MarketSummary extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Last updated: ${DateFormat('MMM d, yyyy').format(DateTime.now())}',
+                  'Last updated: ${_formatDate(DateTime.now())}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -193,6 +227,10 @@ class MarketSummary extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM d, yyyy').format(date);
   }
 
   Widget _buildLoadingState() {
@@ -297,7 +335,7 @@ class MarketSummary extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       final marketProvider = Provider.of<MarketProvider>(context, listen: false);
-                      marketProvider.fetchMarketsByProduct(productName);
+                      marketProvider.fetchMarketsByProductId(widget.productId);
                     },
                     child: Text('Retry'),
                   ),
@@ -421,7 +459,10 @@ class _MarketPriceCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${price.toStringAsFixed(2)} UGX',
+            NumberFormat.currency(
+              symbol: 'UGX ',
+              decimalDigits: 0,
+            ).format(price),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,

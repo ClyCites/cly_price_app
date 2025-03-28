@@ -22,7 +22,6 @@ class MarketsScreen extends StatefulWidget {
 
 class _MarketsScreenState extends State<MarketsScreen> {
   String _selectedProduct = '';
-  String _productId = '';
   List<Map<String, dynamic>> _marketComparisons = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -39,7 +38,6 @@ class _MarketsScreenState extends State<MarketsScreen> {
     if (productProvider.products.isNotEmpty) {
       setState(() {
         _selectedProduct = productProvider.products.first.name;
-        _productId = productProvider.products.first.id;
         _isLoading = true;
       });
       
@@ -56,7 +54,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
       
       final comparisons = await Provider.of<ProductProvider>(context, listen: false)
           .apiService
-          .compareMarketPrices(_productId);
+          .compareMarketPrices(_selectedProduct);
       
       setState(() {
         _marketComparisons = comparisons;

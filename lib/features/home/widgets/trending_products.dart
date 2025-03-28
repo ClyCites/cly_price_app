@@ -6,7 +6,7 @@ import '../../../core/theme/app_colors.dart';
 
 class TrendingProducts extends StatelessWidget {
   final List<Product> products;
-  final Function(String) onProductSelected;
+  final Function(String, String) onProductSelected;
 
   const TrendingProducts({
     super.key,
@@ -46,7 +46,7 @@ class TrendingProducts extends StatelessWidget {
         itemBuilder: (context, index) {
           final product = products[index];
           return GestureDetector(
-            onTap: () => onProductSelected(product.name),
+            onTap: () => onProductSelected(product.id, product.name),
             child: Container(
               width: 160,
               margin: const EdgeInsets.only(right: 16),

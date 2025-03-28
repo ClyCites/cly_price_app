@@ -232,15 +232,18 @@ class PriceChart extends StatelessWidget {
       case 'Day':
         return DateFormat('HH:mm').format(date);
       case 'Week':
-        return DateFormat('E').format(date);
+        // Return day number instead of day name
+        return date.day.toString();
       case 'Month':
-        return DateFormat('d').format(date);
+        return date.day.toString();
       case '3 Months':
-        return DateFormat('MMM d').format(date);
+        // Return day and month as numbers
+        return '${date.day}/${date.month}';
       case 'Year':
-        return DateFormat('MMM').format(date);
+        // Return month number instead of month name
+        return date.month.toString();
       default:
-        return DateFormat('MMM d').format(date);
+        return date.day.toString();
     }
   }
 }

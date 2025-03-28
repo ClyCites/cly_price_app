@@ -68,7 +68,7 @@ class _ProductScreenState extends State<ProductScreen> with SingleTickerProvider
       await productProvider.fetchPriceData(product.name, _selectedTimeframe);
 
       // Load market comparisons
-      await marketProvider.fetchMarketsByProduct(product.name);
+      await marketProvider.fetchMarketsByProductId(product.id);
 
       // Load alerts
       await alertProvider.loadAlerts();

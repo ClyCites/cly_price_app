@@ -16,6 +16,7 @@ class MarketProvider with ChangeNotifier {
   // Cache management
   final Duration _cacheDuration = const Duration(hours: 1);
   DateTime? _lastFetchTime;
+  String _lastProductIdFetched = '';
 
   // Getters
   List<Market> get markets => _markets;
@@ -86,7 +87,168 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
-  // Add a new market
+  // Fetch market comparisons for a product by ID
+  Future<void> fetchMarketsByProductId(String productId) async {
+    // Don't proceed if product ID is empty or if we're already loading this product
+    if (productId.isEmpty) {
+      _setError(true, 'Product ID cannot be empty');
+      return;
+    }
+    
+    // Skip if we're already loading or if we've already loaded this product recently
+    if (_isLoading && _lastProductIdFetched == productId) return;
+    
+    _setLoading(true);
+    _lastProductIdFetched = productId;
+    
+    try {
+      // Try to load from cache first
+      final cachedComparisons = await _loadMarketComparisonsFromCache(productId);
+      if (cachedComparisons.isNotEmpty) {
+        _marketComparisons = cachedComparisons;
+        _setLoading(false);
+        _setError(false, null);
+        notifyListeners();
+      }
+      
+      // Fetch from API
+      final apiService = serviceLocator.apiService;
+      final comparisons = await apiService.compareMarketPrices(productId);
+      
+      _marketComparisons = comparisons;
+      
+      // Save to cache
+      await _saveMarketComparisonsToCache(productId, comparisons);
+      
+      _setLoading(false);
+      _setError(false, null);
+      notifyListeners();
+    } catch (e) {
+      serviceLocator.logger.e('Error fetching market comparisons: $e');
+      
+      // If we don't have cached data, use mock data
+      if (_marketComparisons.isEmpty) {
+        _marketComparisons = _getMockMarketComparisons(productId);
+      }
+      
+      _setLoading(false);
+      _setError(true, 'Failed to load market comparisons: $e');
+      notifyListeners();
+    }
+  }
+
+  // Extract market name from market data
+  String _extractMarketName(dynamic marketData) {
+    if (marketData is String) {
+      return marketData;
+    } else if (marketData is Map) {
+      // Try to get the name field from the map
+      final name = marketData['name'];
+      if (name is String) {
+        return name;
+      }
+    }
+    
+    // If we can't extract a name, log the issue and return a default
+    serviceLocator.logger.e('Could not extract market name from: $marketData');
+    return 'Unknown Market';
+  }
+
+  // Find cheapest market for a product
+  Market? findCheapestMarket(String productId) {
+    if (_marketComparisons.isEmpty) return null;
+    
+    // Sort by price (lowest first)
+    final sortedComparisons = List<Map<String, dynamic>>.from(_marketComparisons)
+      ..sort((a, b) => (a['price'] as num).compareTo(b['price'] as num));
+    
+    if (sortedComparisons.isEmpty) return null;
+    
+    // Create a Market object from the comparison data
+    final cheapestComparison = sortedComparisons.first;
+    final marketName = _extractMarketName(cheapestComparison['market']);
+    
+    return Market(
+      id: marketName.hashCode.toString(),
+      name: marketName,
+      location: 'Unknown',
+      currentPrice: _ensureDouble(cheapestComparison['price']),
+      productId: productId,
+    );
+  }
+
+  // Find most expensive market for a product
+  Market? findMostExpensiveMarket(String productId) {
+    if (_marketComparisons.isEmpty) return null;
+    
+    // Sort by price (highest first)
+    final sortedComparisons = List<Map<String, dynamic>>.from(_marketComparisons)
+      ..sort((a, b) => (b['price'] as num).compareTo(a['price'] as num));
+    
+    if (sortedComparisons.isEmpty) return null;
+    
+    // Create a Market object from the comparison data
+    final expensiveComparison = sortedComparisons.first;
+    final marketName = _extractMarketName(expensiveComparison['market']);
+    
+    return Market(
+      id: marketName.hashCode.toString(),
+      name: marketName,
+      location: 'Unknown',
+      currentPrice: _ensureDouble(expensiveComparison['price']),
+      productId: productId,
+    );
+  }
+
+  // Convert num to double safely
+  double _ensureDouble(dynamic value) {
+    if (value is int) {
+      return value.toDouble();
+    } else if (value is double) {
+      return value;
+    } else if (value is num) {
+      return value.toDouble();
+    }
+    
+    // If it's not a number, log the issue and return 0
+    serviceLocator.logger.e('Value is not a number: $value');
+    return 0.0;
+  }
+
+  // Get average price for a product across all markets
+  double getAveragePrice(String productId) {
+    if (_marketComparisons.isEmpty) return 0;
+    
+    double totalPrice = 0;
+    for (final comparison in _marketComparisons) {
+      totalPrice += _ensureDouble(comparison['price']);
+    }
+    
+    return totalPrice / _marketComparisons.length;
+  }
+
+  // Helper methods
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+  }
+
+  void _setError(bool hasError, String? message) {
+    _hasError = hasError;
+    _errorMessage = message;
+  }
+
+  // Cache management for markets
+  Future<void> _saveMarketsToCache(List<Market> markets) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final marketsJson = markets.map((market) => jsonEncode(market.toJson())).toList();
+      await prefs.setStringList('cached_markets', marketsJson);
+      await prefs.setString('markets_cache_time', DateTime.now().toIso8601String());
+    } catch (e) {
+      serviceLocator.logger.e('Error saving markets to cache: $e');
+    }
+  }
+
   Future<void> addMarket(Market market) async {
     _setLoading(true);
     
@@ -122,157 +284,6 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
-  // Delete a market
-  Future<void> deleteMarket(String id) async {
-    _setLoading(true);
-    
-    try {
-      // Try to delete from API
-      final apiService = serviceLocator.apiService;
-      await apiService.deleteMarket(id);
-      
-      // Remove from local list
-      _markets.removeWhere((market) => market.id == id);
-      
-      // Update cache
-      await _saveMarketsToCache(_markets);
-      
-      _setLoading(false);
-      _setError(false, null);
-      notifyListeners();
-    } catch (e) {
-      serviceLocator.logger.e('Error deleting market: $e');
-      
-      // In development or if API fails, still remove from local list
-      if (kDebugMode) {
-        _markets.removeWhere((market) => market.id == id);
-        await _saveMarketsToCache(_markets);
-        _setLoading(false);
-        notifyListeners();
-      } else {
-        _setLoading(false);
-        _setError(true, 'Failed to delete market: $e');
-        notifyListeners();
-        throw e; // Re-throw to handle in UI
-      }
-    }
-  }
-
-  // Fetch market comparisons for a product
-  Future<void> fetchMarketsByProduct(String productName) async {
-    // Don't proceed if product name is empty
-    if (productName.isEmpty) {
-      _setError(true, 'Product name cannot be empty');
-      _marketComparisons = _getMockMarketComparisons('Default');
-      notifyListeners();
-      return;
-    }
-
-    _setLoading(true);
-    
-    try {
-      final apiService = serviceLocator.apiService;
-      _marketComparisons = await apiService.compareMarketPrices(productName);
-      
-      _setLoading(false);
-      _setError(false, null);
-      notifyListeners();
-    } catch (e) {
-      serviceLocator.logger.e('Error fetching market comparisons: $e');
-      _setLoading(false);
-      _setError(true, 'Failed to load market comparisons: $e');
-      
-      // Always use mock data when API fails
-      _marketComparisons = _getMockMarketComparisons(productName);
-      notifyListeners();
-    }
-  }
-
-  // Get markets by product
-  List<Market> getMarketsByProduct(String productName) {
-    // In a real implementation, this would filter markets by product
-    // For now, we'll just return all markets
-    return _markets;
-  }
-
-  // Find cheapest market for a product
-  Market? findCheapestMarket(String productName) {
-    if (_marketComparisons.isEmpty) return null;
-    
-    // Sort by price (lowest first)
-    final sortedComparisons = List<Map<String, dynamic>>.from(_marketComparisons)
-      ..sort((a, b) => (a['price'] as num).compareTo(b['price'] as num));
-    
-    if (sortedComparisons.isEmpty) return null;
-    
-    // Create a Market object from the comparison data
-    final cheapestComparison = sortedComparisons.first;
-    return Market(
-      id: cheapestComparison['market'].hashCode.toString(),
-      name: cheapestComparison['market'] as String,
-      location: 'Unknown',
-      currentPrice: cheapestComparison['price'] as double,
-      productId: productName,
-    );
-  }
-
-  // Find most expensive market for a product
-  Market? findMostExpensiveMarket(String productName) {
-    if (_marketComparisons.isEmpty) return null;
-    
-    // Sort by price (highest first)
-    final sortedComparisons = List<Map<String, dynamic>>.from(_marketComparisons)
-      ..sort((a, b) => (b['price'] as num).compareTo(a['price'] as num));
-    
-    if (sortedComparisons.isEmpty) return null;
-    
-    // Create a Market object from the comparison data
-    final expensiveComparison = sortedComparisons.first;
-    return Market(
-      id: expensiveComparison['market'].hashCode.toString(),
-      name: expensiveComparison['market'] as String,
-      location: 'Unknown',
-      currentPrice: expensiveComparison['price'] as double,
-      productId: productName,
-    );
-  }
-
-  // Get average price for a product across all markets
-  double getAveragePrice(String productName) {
-    if (_marketComparisons.isEmpty) return 0;
-    
-    double totalPrice = 0;
-    for (final comparison in _marketComparisons) {
-      totalPrice += comparison['price'] as double;
-    }
-    
-    return totalPrice / _marketComparisons.length;
-  }
-
-  // Helper methods
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(bool hasError, String? message) {
-    _hasError = hasError;
-    _errorMessage = message;
-    notifyListeners();
-  }
-
-  // Cache management
-  Future<void> _saveMarketsToCache(List<Market> markets) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final marketsJson = markets.map((market) => jsonEncode(market.toJson())).toList();
-      await prefs.setStringList('cached_markets', marketsJson);
-      await prefs.setString('markets_cache_time', DateTime.now().toIso8601String());
-    } catch (e) {
-      serviceLocator.logger.e('Error saving markets to cache: $e');
-    }
-  }
-
   Future<List<Market>> _loadMarketsFromCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -297,19 +308,75 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
+  // Cache management for market comparisons
+  Future<void> _saveMarketComparisonsToCache(String productId, List<Map<String, dynamic>> comparisons) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final comparisonsJson = comparisons.map((comparison) => jsonEncode(comparison)).toList();
+      await prefs.setStringList('cached_market_comparisons_$productId', comparisonsJson);
+      await prefs.setString('market_comparisons_cache_time_$productId', DateTime.now().toIso8601String());
+    } catch (e) {
+      serviceLocator.logger.e('Error saving market comparisons to cache: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadMarketComparisonsFromCache(String productId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final comparisonsJson = prefs.getStringList('cached_market_comparisons_$productId') ?? [];
+      final cacheTimeStr = prefs.getString('market_comparisons_cache_time_$productId');
+      
+      if (cacheTimeStr != null) {
+        final cacheTime = DateTime.parse(cacheTimeStr);
+        final difference = DateTime.now().difference(cacheTime);
+        
+        if (difference > _cacheDuration) {
+          return []; // Cache expired
+        }
+      }
+      
+      return comparisonsJson
+          .map((comparisonStr) => jsonDecode(comparisonStr) as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      serviceLocator.logger.e('Error loading market comparisons from cache: $e');
+      return [];
+    }
+  }
+
   // Clear cache
   Future<void> clearCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('cached_markets');
       await prefs.remove('markets_cache_time');
+      
+      // Also clear product-specific caches
+      final keys = prefs.getKeys();
+      for (final key in keys) {
+        if (key.startsWith('cached_market_comparisons_') || 
+            key.startsWith('market_comparisons_cache_time_')) {
+          await prefs.remove(key);
+        }
+      }
     } catch (e) {
       serviceLocator.logger.e('Error clearing market cache: $e');
     }
   }
 
-  // Mock data for offline development
-  List<Map<String, dynamic>> _getMockMarketComparisons(String productName) {
+  // Clear cache for a specific product
+  Future<void> clearProductCache(String productId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cached_market_comparisons_$productId');
+      await prefs.remove('market_comparisons_cache_time_$productId');
+    } catch (e) {
+      serviceLocator.logger.e('Error clearing product cache: $e');
+    }
+  }
+
+  // Mock data for market comparisons
+  List<Map<String, dynamic>> _getMockMarketComparisons(String productId) {
     return [
       {
         'market': 'Kampala Central Market',
