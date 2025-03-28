@@ -313,6 +313,7 @@ class AuthProvider with ChangeNotifier {
       );
       
       if (updatedUser != null) {
+        // Update the local user object with the new data
         _user = updatedUser;
         _profilePicture = updatedUser.profilePicture;
         

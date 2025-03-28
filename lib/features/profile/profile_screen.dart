@@ -5,10 +5,12 @@ import 'dart:io';
 import 'dart:convert';
 
 import '../../core/providers/auth_provider.dart';
+import '../../core/models/user.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/validators.dart';
 import '../../features/common/widgets/app_button.dart';
 import '../../features/common/widgets/loading_indicator.dart';
+import '../../features/settings/settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -24,17 +26,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
   String? _base64Image;
   bool _isEditing = false;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _nameController = TextEditingController(text: authProvider.user?.name ?? '');
-    _emailController = TextEditingController(text: authProvider.user?.email ?? '');
+    _initControllers();
     
     // Load user profile on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      authProvider.getUserProfile();
+      _refreshUserProfile();
+    });
+  }
+
+  void _initControllers() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _nameController = TextEditingController(text: authProvider.user?.name ?? '');
+    _emailController = TextEditingController(text: authProvider.user?.email ?? '');
+  }
+
+  // Update controllers when user data changes
+  void _updateControllers() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _nameController.text = authProvider.user?.name ?? '';
+    _emailController.text = authProvider.user?.email ?? '';
+  }
+
+  Future<void> _refreshUserProfile() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.getUserProfile();
+    
+    // Update controllers with fresh data
+    _updateControllers();
+    
+    setState(() {
+      _isRefreshing = false;
     });
   }
 
@@ -76,6 +106,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
       
       if (success && mounted) {
+        // Explicitly refresh user profile after successful update
+        await _refreshUserProfile();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profile updated successfully'),
@@ -103,11 +136,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
     
+    // If user data changes, update controllers
+    if (!_isEditing && user != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateControllers();
+      });
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         centerTitle: true,
+        elevation: 0,
         actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshUserProfile,
+            ),
           if (!_isEditing)
             IconButton(
               icon: const Icon(Icons.edit),
@@ -119,195 +165,198 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
         ],
       ),
-      body: authProvider.isLoading
+      body: authProvider.isLoading || _isRefreshing
           ? const Center(child: LoadingIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Profile Picture
-                    GestureDetector(
-                      onTap: _isEditing ? _pickImage : null,
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: AppColors.lightGrey,
-                            backgroundImage: _profileImage != null
-                                ? FileImage(_profileImage!)
-                                : (user?.profilePicture != null
-                                    ? NetworkImage(user!.profilePicture!)
-                                    : null) as ImageProvider?,
-                            child: (user?.profilePicture == null && _profileImage == null)
-                                ? const Icon(Icons.person, size: 60, color: AppColors.textMedium)
-                                : null,
-                          ),
-                          if (_isEditing)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
+          : RefreshIndicator(
+              onRefresh: _refreshUserProfile,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Profile Picture
+                      GestureDetector(
+                        onTap: _isEditing ? _pickImage : null,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: AppColors.lightGrey,
+                              backgroundImage: _profileImage != null
+                                  ? FileImage(_profileImage!)
+                                  : (user?.profilePicture != null
+                                      ? NetworkImage(user!.profilePicture!)
+                                      : null) as ImageProvider?,
+                              child: (user?.profilePicture == null && _profileImage == null)
+                                  ? const Icon(Icons.person, size: 60, color: AppColors.textMedium)
+                                  : null,
+                            ),
+                            if (_isEditing)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // User Info
-                    if (_isEditing) ...[
-                      // Name Field
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Full Name',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        validator: Validators.required('Name is required'),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                        validator: Validators.email('Please enter a valid email'),
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Save Button
-                      AppButton(
-                        text: 'Save Changes',
-                        isLoading: authProvider.isLoading,
-                        onPressed: _saveProfile,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Cancel Button
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = false;
-                            _nameController.text = user?.name ?? '';
-                            _emailController.text = user?.email ?? '';
-                            _profileImage = null;
-                            _base64Image = null;
-                          });
-                        },
-                        child: const Text('Cancel'),
-                      ),
-                    ] else ...[
-                      // Display Name
-                      Text(
-                        user?.name ?? 'No Name',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
                       
-                      // Display Email
-                      Text(
-                        user?.email ?? 'No Email',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textMedium,
+                      // User Info
+                      if (_isEditing) ...[
+                        // Name Field
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Full Name',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: Validators.required('Name is required'),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Display Role
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 16),
+                        
+                        // Email Field
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          validator: Validators.email('Please enter a valid email'),
                         ),
-                        child: Text(
-                          user?.role?.toUpperCase() ?? 'USER',
-                          style: TextStyle(
-                            color: AppColors.primary,
+                        const SizedBox(height: 32),
+                        
+                        // Save Button
+                        AppButton(
+                          text: 'Save Changes',
+                          isLoading: authProvider.isLoading,
+                          onPressed: _saveProfile,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Cancel Button
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _isEditing = false;
+                              _updateControllers(); // Reset controllers to current user data
+                              _profileImage = null;
+                              _base64Image = null;
+                            });
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                      ] else ...[
+                        // Display Name
+                        Text(
+                          user?.name ?? 'No Name',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Account Info Section
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      
-                      // Account Settings
-                      ListTile(
-                        leading: const Icon(Icons.settings_outlined),
-                        title: const Text('Account Settings'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          // Navigate to account settings
-                        },
-                      ),
-                      
-                      // Notifications
-                      ListTile(
-                        leading: const Icon(Icons.notifications_outlined),
-                        title: const Text('Notifications'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          // Navigate to notifications settings
-                        },
-                      ),
-                      
-                      // Privacy & Security
-                      ListTile(
-                        leading: const Icon(Icons.security_outlined),
-                        title: const Text('Privacy & Security'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          // Navigate to privacy settings
-                        },
-                      ),
-                      
-                      // Help & Support
-                      ListTile(
-                        leading: const Icon(Icons.help_outline),
-                        title: const Text('Help & Support'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          // Navigate to help & support
-                        },
-                      ),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Logout Button
-                      AppButton(
-                        text: 'Logout',
-                        isLoading: authProvider.isLoading,
-                        type: AppButtonType.danger,
-                        onPressed: () async {
-                          await authProvider.signOut();
-                          if (mounted) {
-                            Navigator.of(context).pushReplacementNamed('/login');
-                          }
-                        },
-                      ),
+                        const SizedBox(height: 8),
+                        
+                        // Display Email
+                        Text(
+                          user?.email ?? 'No Email',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppColors.textMedium,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // Display Role
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            user?.role?.toUpperCase() ?? 'USER',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Account Info Section
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        
+                        // Account Settings
+                        ListTile(
+                          leading: const Icon(Icons.settings_outlined),
+                          title: const Text('Account Settings'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            Navigator.of(context).pushNamed('/account-settings');
+                          },
+                        ),
+                        
+                        // Notifications
+                        ListTile(
+                          leading: const Icon(Icons.notifications_outlined),
+                          title: const Text('Notifications'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            // Navigate to notifications settings
+                          },
+                        ),
+                        
+                        // Privacy & Security
+                        ListTile(
+                          leading: const Icon(Icons.security_outlined),
+                          title: const Text('Privacy & Security'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            // Navigate to privacy settings
+                          },
+                        ),
+                        
+                        // Help & Support
+                        ListTile(
+                          leading: const Icon(Icons.help_outline),
+                          title: const Text('Help & Support'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () {
+                            // Navigate to help & support
+                          },
+                        ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Logout Button
+                        AppButton(
+                          text: 'Logout',
+                          isLoading: authProvider.isLoading,
+                          type: AppButtonType.danger,
+                          onPressed: () async {
+                            await authProvider.signOut();
+                            if (mounted) {
+                              Navigator.of(context).pushReplacementNamed('/login');
+                            }
+                          },
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

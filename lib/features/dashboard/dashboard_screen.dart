@@ -34,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'Markets',
     '',
     'Predictions',
-    'Profile',
+    '',
   ];
 
   @override
