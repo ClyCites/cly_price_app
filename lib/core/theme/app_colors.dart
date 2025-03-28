@@ -38,6 +38,7 @@ class AppColors {
   static const warning = Color(0xFFFFC107);
   static const error = Color(0xFFF44336);
   static const info = Color(0xFF2196F3);
+  static const Color lightGrey = Color(0xFFD3D3D3);
   
   // Chart colors
   static const List<Color> chartColors = [

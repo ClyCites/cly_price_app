@@ -52,6 +52,9 @@ class UserProvider with ChangeNotifier {
         if (user.role != null) {
           await prefs.setString(AppConstants.prefUserRole, user.role!);
         }
+        if (user.profilePicture != null) {
+          await prefs.setString(AppConstants.prefUserProfilePicture, user.profilePicture!);
+        }
       } else {
         debugPrint("Failed to load user profile");
         _error = "Could not load user profile";
@@ -79,6 +82,7 @@ class UserProvider with ChangeNotifier {
       final name = prefs.getString(AppConstants.prefUserName);
       final email = prefs.getString(AppConstants.prefUserEmail);
       final role = prefs.getString(AppConstants.prefUserRole);
+      final profilePicture = prefs.getString(AppConstants.prefUserProfilePicture);
       
       if (userId != null) {
         _user = User(
@@ -86,6 +90,7 @@ class UserProvider with ChangeNotifier {
           name: name,
           email: email,
           role: role,
+          profilePicture: profilePicture,
         );
         debugPrint("Loaded user from cache: ${_user?.name ?? 'Unknown'}");
       }
@@ -101,6 +106,7 @@ class UserProvider with ChangeNotifier {
     String? bio,
     String? phoneNumber,
     String? location,
+    String? profilePicture,
   }) async {
     final userId = await getUserId();
     if (userId == null) {
@@ -120,6 +126,7 @@ class UserProvider with ChangeNotifier {
         bio: bio,
         phoneNumber: phoneNumber,
         location: location,
+        profilePicture: profilePicture,
       );
       
       if (updatedUser != null) {
@@ -132,6 +139,9 @@ class UserProvider with ChangeNotifier {
         }
         if (updatedUser.email != null) {
           await prefs.setString(AppConstants.prefUserEmail, updatedUser.email!);
+        }
+        if (updatedUser.profilePicture != null) {
+          await prefs.setString(AppConstants.prefUserProfilePicture, updatedUser.profilePicture!);
         }
         
         _isLoading = false;
@@ -181,6 +191,16 @@ class UserProvider with ChangeNotifier {
     }
   }
   
+  // Logout user
+  Future<void> logout() async {
+    try {
+      await serviceLocator.apiService.logout();
+      clearUserData();
+    } catch (e) {
+      debugPrint("Error during logout: $e");
+    }
+  }
+  
   // Clear user data (called on logout)
   void clearUserData() {
     _user = null;
@@ -193,3 +213,4 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+

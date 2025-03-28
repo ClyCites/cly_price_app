@@ -21,6 +21,8 @@ class AppConstants {
   static const String prefUserName = 'user_name';
   static const String prefUserEmail = 'user_email';
   static const String prefUserRole = 'user_role';
+  static const String prefUserProfilePicture = 'user_profile_picture';
+  static const String prefTokenExpiry = 'token_expiry';
   
   // Notifications
   static const String notificationChannelId = 'clycites_channel';
@@ -65,5 +67,8 @@ class AppConstants {
     '6 Months',
     'Year',
   ];
+
+  // Session Duration (7 days in milliseconds)
+  static const int sessionDuration = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 }
 

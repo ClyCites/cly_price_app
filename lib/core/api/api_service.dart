@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_constants.dart';
-import '../models/models.dart';
 import '../models/user.dart'; // Adjust the path as necessary
 import '../models/product.dart'; // Adjust the path as necessary
 import '../models/price_data.dart'; // Adjust the path as necessary
@@ -11,7 +10,6 @@ import '../models/price_entry.dart'; // Adjust the path as necessary
 import '../services/service_locator.dart';
 import '../models/market_model.dart'; // Adjust the path as necessary
 import '../models/price_alert_model.dart'; // Adjust the path as necessary
-import '../utils/app_logger.dart';
 
 class ApiService {
   final String baseUrl = AppConstants.apiBaseUrl;
@@ -114,7 +112,12 @@ class ApiService {
   // Auth API Methods
   // ==================
   
-  Future<Map<String, dynamic>?> register(String name, String email, String password) async {
+  Future<Map<String, dynamic>?> register(
+    String name, 
+    String email, 
+    String password, 
+    {String? profilePicture}
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
@@ -123,6 +126,7 @@ class ApiService {
           'name': name,
           'email': email,
           'password': password,
+          if (profilePicture != null) 'profilePicture': profilePicture,
         }),
       );
 
@@ -202,6 +206,9 @@ class ApiService {
           if (userData['role'] != null) {
             await prefs.setString(AppConstants.prefUserRole, userData['role']);
           }
+          if (userData['profilePicture'] != null) {
+            await prefs.setString(AppConstants.prefUserProfilePicture, userData['profilePicture']);
+          }
           
           return userData;
         } else {
@@ -265,6 +272,45 @@ class ApiService {
     final prefs = serviceLocator.preferences;
     await prefs.remove(AppConstants.prefToken);
     await prefs.remove(AppConstants.prefUserId);
+    await prefs.remove(AppConstants.prefTokenExpiry);
+  }
+  
+  Future<User?> updateUserProfile({
+    required String userId,
+    String? name,
+    String? email,
+    String? bio,
+    String? phoneNumber,
+    String? location,
+    String? profilePicture,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: headers,
+        body: jsonEncode({
+          if (name != null) 'name': name,
+          if (email != null) 'email': email,
+          if (bio != null) 'bio': bio,
+          if (phoneNumber != null) 'phoneNumber': phoneNumber,
+          if (location != null) 'location': location,
+          if (profilePicture != null) 'profilePicture': profilePicture,
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return User.fromJson(responseData);
+      } else {
+        logger.e('Failed to update user profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      logger.e('Update user profile error: $e');
+      return null;
+    }
   }
   
   // ==================
@@ -401,41 +447,6 @@ class ApiService {
     }
   }
 
-  Future<User?> updateUserProfile({
-  required String userId,
-  String? name,
-  String? email,
-  String? bio,
-  String? phoneNumber,
-  String? location,
-}) async {
-  try {
-    final headers = await _getHeaders();
-    
-    final response = await http.put(
-      Uri.parse('$baseUrl/users/$userId'),
-      headers: headers,
-      body: jsonEncode({
-        if (name != null) 'name': name,
-        if (email != null) 'email': email,
-        if (bio != null) 'bio': bio,
-        if (phoneNumber != null) 'phoneNumber': phoneNumber,
-        if (location != null) 'location': location,
-      }),
-    );
-    
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      return User.fromJson(responseData);
-    } else {
-      logger.e('Failed to update user profile: ${response.statusCode}');
-      return null;
-    }
-  } catch (e) {
-    logger.e('Update user profile error: $e');
-    return null;
-  }
-}
 
 // Get user preferences
 Future<Map<String, dynamic>> getUserPreferences(String userId) async {

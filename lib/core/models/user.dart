@@ -3,12 +3,14 @@ class User {
   final String? name;
   final String? email;
   final String? role;
+  final String? profilePicture;
 
   User({
     this.id,
     this.name,
     this.email,
     this.role,
+    this.profilePicture, // Added to constructor
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class User {
       name: json['name'],
       email: json['email'],
       role: json['role'] ?? 'user',
+      profilePicture: json['profilePicture'], // Parse from JSON
     );
   }
 
@@ -26,11 +29,23 @@ class User {
       name: map['name'],
       email: map['email'],
       role: map['role'] ?? 'user',
+      profilePicture: map['profilePicture'], // Parse from map
     );
+  }
+  
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'role': role,
+      'profilePicture': profilePicture,
+    };
   }
   
   @override
   String toString() {
-    return 'User(id: $id, name: $name, email: $email, role: $role)';
+    return 'User(id: $id, name: $name, email: $email, role: $role, profilePicture: $profilePicture)';
   }
 }
+
