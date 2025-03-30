@@ -5,6 +5,7 @@ class Product {
   final String productType; // 'solid' or 'liquid'
   final String defaultUnit; // 'kg' or 'liters'
   final String imageUrl;
+  final String? description;
   final bool isPopular;
   final double currentPrice;
   final double priceChange;
@@ -17,6 +18,7 @@ class Product {
     required this.productType,
     required this.defaultUnit,
     this.imageUrl = '',
+    this.description,
     this.isPopular = false,
     required this.currentPrice,
     this.priceChange = 0,
@@ -45,6 +47,7 @@ class Product {
       category: map['category'],
       productType: map['productType'],
       defaultUnit: map['defaultUnit'],
+      description: map['description'],
       imageUrl: map['imageUrl'] ?? '',
       isPopular: map['isPopular'] == 1,
       currentPrice: map['currentPrice'],
@@ -60,6 +63,7 @@ class Product {
       'productType': productType,
       'defaultUnit': defaultUnit,
       'imageUrl': imageUrl,
+      'description': description,
       'isPopular': isPopular,
       'currentPrice': currentPrice,
       'priceChange': priceChange,

@@ -18,11 +18,20 @@ class AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen size for responsive sizing
+    final size = MediaQuery.of(context).size;
+    final buttonHeight = size.height * 0.065; // Relative height
+    final loadingSize = size.height * 0.025; // Relative loading indicator size
+    final fontSize = size.width * 0.04; // Relative font size
+    
     if (isOutlined) {
       return OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          minimumSize: Size(double.infinity, buttonHeight),
+          padding: EdgeInsets.symmetric(
+            vertical: size.height * 0.015,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -30,8 +39,8 @@ class AuthButton extends StatelessWidget {
         ),
         child: isLoading
             ? SizedBox(
-                height: 20,
-                width: 20,
+                height: loadingSize,
+                width: loadingSize,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -40,7 +49,7 @@ class AuthButton extends StatelessWidget {
             : Text(
                 text,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
                 ),
@@ -51,7 +60,10 @@ class AuthButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        minimumSize: Size(double.infinity, buttonHeight),
+        padding: EdgeInsets.symmetric(
+          vertical: size.height * 0.015,
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
@@ -59,18 +71,18 @@ class AuthButton extends StatelessWidget {
         ),
       ),
       child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
+          ? SizedBox(
+              height: loadingSize,
+              width: loadingSize,
+              child: const CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
           : Text(
               text,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: fontSize,
                 fontWeight: FontWeight.bold,
               ),
             ),

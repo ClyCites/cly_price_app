@@ -52,33 +52,57 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final size = MediaQuery.of(context).size;
+    final padding = size.width * 0.06; // Responsive padding
+    final spacer = size.height * 0.02; // Responsive spacing
+    final titleSize = size.width * 0.06; // Responsive title size
+    final subtitleSize = size.width * 0.035; // Responsive subtitle size
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title: Text(
+          'Forgot Password',
+          style: TextStyle(fontSize: size.width * 0.045),
+        ),
         centerTitle: true,
         elevation: 0,
+        toolbarHeight: size.height * 0.07, // Responsive app bar height
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Animate(
-            effects: const [
-              FadeEffect(duration: Duration(milliseconds: 600)),
-              SlideEffect(
-                begin: Offset(0, 0.1),
-                end: Offset.zero,
-                duration: Duration(milliseconds: 600),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: EdgeInsets.all(padding),
+                    child: Animate(
+                      effects: const [
+                        FadeEffect(duration: Duration(milliseconds: 600)),
+                        SlideEffect(
+                          begin: Offset(0, 0.1),
+                          end: Offset.zero,
+                          duration: Duration(milliseconds: 600),
+                        ),
+                      ],
+                      child: _emailSent 
+                        ? _buildSuccessView(titleSize, subtitleSize, spacer) 
+                        : _buildFormView(authProvider, titleSize, subtitleSize, spacer),
+                    ),
+                  ),
+                ),
               ),
-            ],
-            child: _emailSent ? _buildSuccessView() : _buildFormView(authProvider),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildFormView(AuthProvider authProvider) {
+  Widget _buildFormView(AuthProvider authProvider, double titleSize, double subtitleSize, double spacer) {
     return Form(
       key: _formKey,
       child: Column(
@@ -86,18 +110,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         children: [
           Text(
             'Reset Password',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            style: TextStyle(
+              fontSize: titleSize,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: spacer * 0.5),
           Text(
             'Enter your email address and we\'ll send you instructions to reset your password',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: TextStyle(
+              fontSize: subtitleSize,
               color: AppColors.textMedium,
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: spacer * 1.5),
           
           // Email Field
           AuthTextField(
@@ -108,7 +134,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             keyboardType: TextInputType.emailAddress,
             validator: Validators.email('Please enter a valid email'),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: spacer * 2),
           
           // Reset Button
           AuthButton(
@@ -116,7 +142,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             isLoading: authProvider.isLoading,
             onPressed: _resetPassword,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: spacer * 1.5),
           
           // Back to Login
           Center(
@@ -127,63 +153,76 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Text(
                 'Back to Login',
                 style: TextStyle(
+                  fontSize: subtitleSize,
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
+          
+          const Spacer(),
         ],
       ),
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(double titleSize, double subtitleSize, double spacer) {
+    final size = MediaQuery.of(context).size;
+    final iconSize = size.width * 0.2; // Responsive icon size
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle_outline,
           color: AppColors.success,
-          size: 80,
+          size: iconSize,
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: spacer * 1.5),
         Text(
           'Email Sent!',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+          style: TextStyle(
+            fontSize: titleSize,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: spacer),
         Text(
           'We\'ve sent password reset instructions to:',
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: TextStyle(
+            fontSize: subtitleSize,
+          ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: spacer * 0.5),
         Text(
           _emailController.text,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          style: TextStyle(
+            fontSize: subtitleSize * 1.1,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: spacer * 1.5),
         Text(
           'Please check your email and follow the instructions to reset your password.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: TextStyle(
+            fontSize: subtitleSize,
             color: AppColors.textMedium,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: spacer * 2),
         AuthButton(
           text: 'Back to Login',
           onPressed: () {
             Navigator.pop(context);
           },
         ),
+        
+        const Spacer(),
       ],
     );
   }

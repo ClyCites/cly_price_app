@@ -16,8 +16,20 @@ class PredictionFactors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final factors = prediction['factors'] as List<dynamic>? ?? [];
     final confidence = prediction['confidence'] as double? ?? 0;
+    
+    // Responsive text sizes
+    final titleSize = size.width * 0.04;
+    final subtitleSize = size.width * 0.03;
+    final smallTextSize = size.width * 0.028;
+    
+    // Responsive spacing
+    final padding = size.width * 0.04;
+    final spacing = size.height * 0.015;
+    final iconSize = size.width * 0.05;
+    final smallIconSize = size.width * 0.03;
     
     return Card(
       elevation: 2,
@@ -25,38 +37,42 @@ class PredictionFactors extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Prediction Factors',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: titleSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.03,
+                    vertical: size.height * 0.006,
+                  ),
                   decoration: BoxDecoration(
                     color: _getConfidenceColor(confidence).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         _getConfidenceIcon(confidence),
-                        size: 12,
+                        size: smallIconSize,
                         color: _getConfidenceColor(confidence),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: size.width * 0.01),
                       Text(
                         '${(confidence * 100).toStringAsFixed(0)}% Confidence',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: smallTextSize,
                           color: _getConfidenceColor(confidence),
                           fontWeight: FontWeight.w500,
                         ),
@@ -67,69 +83,106 @@ class PredictionFactors extends StatelessWidget {
               ],
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: spacing),
             
             // Factors list
             Expanded(
-              child: factors.isEmpty
-                  ? _buildDefaultFactors()
-                  : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      itemCount: factors.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final factor = factors[index];
-                        final name = factor['name'] as String? ?? 'Factor ${index + 1}';
-                        final impact = factor['impact'] as double? ?? 0;
-                        final description = factor['description'] as String? ?? '';
-                        
-                        return ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _getImpactColor(impact).withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Icon(
-                                _getImpactIcon(impact),
-                                color: _getImpactColor(impact),
-                                size: 20,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  if (factors.isEmpty) {
+                    return _buildDefaultFactors(context);
+                  }
+                  
+                  return ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: factors.length,
+                    separatorBuilder: (context, index) => Divider(height: size.height * 0.01),
+                    itemBuilder: (context, index) {
+                      final factor = factors[index];
+                      final name = factor['name'] as String? ?? 'Factor ${index + 1}';
+                      final impact = factor['impact'] as double? ?? 0;
+                      final description = factor['description'] as String? ?? '';
+                      
+                      // Calculate adaptive height based on available space
+                      final itemHeight = constraints.maxHeight / 4.5; // Show about 4-5 items
+                      
+                      return Container(
+                        height: itemHeight,
+                        constraints: BoxConstraints(
+                          minHeight: size.height * 0.06, // Minimum height
+                          maxHeight: size.height * 0.08, // Maximum height
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: iconSize * 2,
+                              height: iconSize * 2,
+                              decoration: BoxDecoration(
+                                color: _getImpactColor(impact).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  _getImpactIcon(impact),
+                                  color: _getImpactColor(impact),
+                                  size: iconSize,
+                                ),
                               ),
                             ),
-                          ),
-                          title: Text(
-                            name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(
-                            description,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getImpactColor(impact).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _formatImpact(impact),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _getImpactColor(impact),
-                                fontWeight: FontWeight.w500,
+                            SizedBox(width: size.width * 0.03),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min, // Use min to avoid overflow
+                                children: [
+                                  Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: subtitleSize,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: size.height * 0.004),
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: smallTextSize,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                            SizedBox(width: size.width * 0.02),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: size.width * 0.02,
+                                vertical: size.height * 0.004,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getImpactColor(impact).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _formatImpact(impact),
+                                style: TextStyle(
+                                  fontSize: smallTextSize,
+                                  color: _getImpactColor(impact),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -137,36 +190,58 @@ class PredictionFactors extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultFactors() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.analytics_outlined,
-          size: 48,
-          color: Colors.grey.shade400,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'No specific factors available',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey.shade600,
+  Widget _buildDefaultFactors(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  final iconSize = size.width * 0.1; // Slightly smaller icon
+  final titleSize = size.width * 0.035;
+  final subtitleSize = size.width * 0.03;
+  
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      // Adjust spacing based on available height
+      final availableHeight = constraints.maxHeight;
+      final spacing = availableHeight * 0.05; // 5% of available height
+      
+      return SingleChildScrollView(
+        child: Container(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Use min to avoid overflow
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                size: iconSize,
+                color: Colors.grey.shade400,
+              ),
+              SizedBox(height: spacing),
+              Text(
+                'No specific factors available',
+                style: TextStyle(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: spacing * 0.5),
+              Text(
+                'Our prediction is based on historical price trends',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: subtitleSize,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Our prediction is based on historical price trends',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade500,
-          ),
-        ),
-      ],
-    );
-  }
+      );
+    },
+  );
+}
 
   Color _getConfidenceColor(double confidence) {
     if (confidence >= 0.7) {

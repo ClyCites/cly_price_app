@@ -20,6 +20,7 @@ class PredictionChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final currentPrice = prediction['currentPrice'] as double? ?? 0;
     final predictedPrice = prediction['predictedPrice'] as double? ?? 0;
     final historicalPrices = prediction['historicalPrices'] as List<dynamic>? ?? [];
@@ -28,59 +29,77 @@ class PredictionChart extends StatelessWidget {
     final priceChange = predictedPrice - currentPrice;
     final priceChangePercentage = currentPrice != 0 ? (priceChange / currentPrice) * 100 : 0;
     
+    // Responsive text sizes
+    final titleSize = size.width * 0.04;
+    final subtitleSize = size.width * 0.03;
+    final valueSize = size.width * 0.04;
+    final smallTextSize = size.width * 0.028;
+    
+    // Responsive spacing
+    final padding = size.width * 0.04;
+    final spacing = size.height * 0.015;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$productName Price Prediction',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$productName Price Prediction',
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$marketName - $timeframe forecast',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      SizedBox(height: spacing * 0.3),
+                      Text(
+                        '$marketName - $timeframe forecast',
+                        style: TextStyle(
+                          fontSize: subtitleSize,
+                          color: Colors.grey.shade600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: size.width * 0.03,
+                    vertical: size.height * 0.006,
+                  ),
                   decoration: BoxDecoration(
                     color: _getPriceChangeColor(priceChangePercentage.toDouble()).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         priceChangePercentage >= 0
                             ? Icons.arrow_upward
                             : Icons.arrow_downward,
-                        size: 12,
+                        size: smallTextSize,
                         color: _getPriceChangeColor(priceChangePercentage.toDouble()),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: size.width * 0.01),
                       Text(
                         '${priceChangePercentage >= 0 ? '+' : ''}${priceChangePercentage.toStringAsFixed(1)}%',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: smallTextSize,
                           color: _getPriceChangeColor(priceChangePercentage.toDouble()),
                           fontWeight: FontWeight.w500,
                         ),
@@ -91,19 +110,21 @@ class PredictionChart extends StatelessWidget {
               ],
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: spacing),
             
             // Price summary
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildPriceBox(
+                  context,
                   'Current Price',
                   '${currentPrice.toStringAsFixed(2)} UGX',
                   Colors.blue.shade100,
                   Colors.blue.shade800,
                 ),
                 _buildPriceBox(
+                  context,
                   'Predicted Price',
                   '${predictedPrice.toStringAsFixed(2)} UGX',
                   _getPriceChangeColor(priceChangePercentage.toDouble()).withOpacity(0.2),
@@ -112,7 +133,7 @@ class PredictionChart extends StatelessWidget {
               ],
             ),
             
-            const SizedBox(height: 16),
+            SizedBox(height: spacing),
             
             // Chart
             Expanded(
@@ -120,7 +141,46 @@ class PredictionChart extends StatelessWidget {
                 LineChartData(
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      // tooltipBackgroundColor: Colors.blueGrey.withOpacity(0.8),
+                      // tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          final index = barSpot.x.toInt();
+                          if (index < 0 || index >= _getChartData().length) {
+                            return null;
+                          }
+                          
+                          final data = _getChartData()[index];
+                          final date = data['date'] as DateTime;
+                          final price = data['price'] as double;
+                          final isHistorical = data['isHistorical'] as bool;
+                          
+                          return LineTooltipItem(
+                            '${DateFormat('MMM d, yyyy').format(date)}\n',
+                            TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: smallTextSize,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'UGX ${price.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: isHistorical ? Colors.blue.shade200 : Colors.green.shade200,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: smallTextSize,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '\n${isHistorical ? 'Historical' : 'Predicted'}',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: smallTextSize * 0.8,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList();
+                      },
                     ),
                     touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {},
                     handleBuiltInTouches: true,
@@ -141,7 +201,7 @@ class PredictionChart extends StatelessWidget {
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 30,
+                        reservedSize: size.height * 0.04,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
                           if (index < 0 || index >= _getChartData().length) {
@@ -149,19 +209,21 @@ class PredictionChart extends StatelessWidget {
                           }
                           
                           // Only show some dates to avoid overcrowding
-                          if (index % 2 != 0 && index != _getChartData().length - 1) {
+                          // Adjust the modulo based on screen width
+                          final modulo = size.width < 360 ? 3 : 2;
+                          if (index % modulo != 0 && index != _getChartData().length - 1) {
                             return const SizedBox.shrink();
                           }
                           
                           final date = _getChartData()[index]['date'] as DateTime;
                           return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
+                            padding: EdgeInsets.only(top: size.height * 0.01),
                             child: Text(
                               DateFormat('MMM d').format(date),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.grey,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 10,
+                                fontSize: smallTextSize * 0.9,
                               ),
                             ),
                           );
@@ -171,14 +233,14 @@ class PredictionChart extends StatelessWidget {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
+                        reservedSize: size.width * 0.1,
                         getTitlesWidget: (value, meta) {
                           return Text(
                             value.toInt().toString(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.grey,
                               fontWeight: FontWeight.bold,
-                              fontSize: 10,
+                              fontSize: smallTextSize * 0.9,
                             ),
                           );
                         },
@@ -215,9 +277,19 @@ class PredictionChart extends StatelessWidget {
                       }),
                       isCurved: true,
                       color: Colors.blue,
-                      barWidth: 3,
+                      barWidth: size.width * 0.006,
                       isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: _getHistoricalDataCount() < 10,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: size.width * 0.01,
+                            color: Colors.blue,
+                            strokeWidth: 1,
+                            strokeColor: Colors.white,
+                          );
+                        },
+                      ),
                       belowBarData: BarAreaData(
                         show: true,
                         color: Colors.blue.withOpacity(0.1),
@@ -237,9 +309,19 @@ class PredictionChart extends StatelessWidget {
                       ),
                       isCurved: true,
                       color: _getPriceChangeColor(priceChangePercentage.toDouble()),
-                      barWidth: 3,
+                      barWidth: size.width * 0.006,
                       isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: (_getChartData().length - _getHistoricalDataCount()) < 10,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: size.width * 0.01,
+                            color: _getPriceChangeColor(priceChangePercentage.toDouble()),
+                            strokeWidth: 1,
+                            strokeColor: Colors.white,
+                          );
+                        },
+                      ),
                       belowBarData: BarAreaData(
                         show: true,
                         color: _getPriceChangeColor(priceChangePercentage.toDouble()).withOpacity(0.1),
@@ -251,15 +333,20 @@ class PredictionChart extends StatelessWidget {
               ),
             ),
             
-            const SizedBox(height: 8),
+            SizedBox(height: spacing * 0.5),
             
             // Legend
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildLegendItem('Historical', Colors.blue),
-                const SizedBox(width: 16),
                 _buildLegendItem(
+                  context,
+                  'Historical',
+                  Colors.blue,
+                ),
+                SizedBox(width: size.width * 0.04),
+                _buildLegendItem(
+                  context,
                   'Predicted',
                   _getPriceChangeColor(priceChangePercentage.toDouble()),
                   isDashed: true,
@@ -272,9 +359,17 @@ class PredictionChart extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceBox(String label, String value, Color bgColor, Color textColor) {
+  Widget _buildPriceBox(BuildContext context, String label, String value, Color bgColor, Color textColor) {
+    final size = MediaQuery.of(context).size;
+    final labelSize = size.width * 0.03;
+    final valueSize = size.width * 0.04;
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: size.width * 0.4,
+      padding: EdgeInsets.symmetric(
+        horizontal: size.width * 0.03,
+        vertical: size.height * 0.012,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
@@ -284,15 +379,15 @@ class PredictionChart extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: labelSize,
               color: textColor.withOpacity(0.8),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: size.height * 0.004),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: valueSize,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
@@ -302,12 +397,15 @@ class PredictionChart extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color, {bool isDashed = false}) {
+  Widget _buildLegendItem(BuildContext context, String label, Color color, {bool isDashed = false}) {
+    final size = MediaQuery.of(context).size;
+    final textSize = size.width * 0.028;
+    
     return Row(
       children: [
         Container(
-          width: 16,
-          height: 3,
+          width: size.width * 0.04,
+          height: size.height * 0.003,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(1.5),
@@ -334,11 +432,11 @@ class PredictionChart extends StatelessWidget {
                 )
               : null,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: size.width * 0.01),
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: textSize,
             color: Colors.grey.shade600,
           ),
         ),

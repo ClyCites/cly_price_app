@@ -75,6 +75,7 @@ class _AddAlertScreenState extends State<AddAlertScreen> {
             id: '',
             name: '',
             category: '',
+            description: '',
             productType: '',
             defaultUnit: '',
             currentPrice: 0,

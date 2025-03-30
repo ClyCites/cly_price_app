@@ -97,17 +97,34 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     final productProvider = Provider.of<ProductProvider>(context);
     final products = productProvider.products;
     final markets = productProvider.markets;
+    final size = MediaQuery.of(context).size;
+    
+    // Responsive text sizes
+    final titleSize = size.width * 0.04;
+    final labelSize = size.width * 0.035;
+    final inputTextSize = size.width * 0.035;
+    
+    // Responsive spacing
+    final padding = size.width * 0.04;
+    final spacing = size.height * 0.015;
+    final inputPadding = EdgeInsets.symmetric(
+      horizontal: size.width * 0.04,
+      vertical: size.height * 0.01,
+    );
     
     if (products.isEmpty || markets.isEmpty) {
-      return const Center(
-        child: Text('No products or markets available'),
+      return Center(
+        child: Text(
+          'No products or markets available',
+          style: TextStyle(fontSize: labelSize),
+        ),
       );
     }
     
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -118,31 +135,45 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(padding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Price Prediction',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: titleSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing),
                       
                       // Product selector
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Product',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          labelStyle: TextStyle(fontSize: labelSize),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: inputPadding,
+                          isDense: true,
                         ),
                         value: _selectedProduct,
+                        style: TextStyle(
+                          fontSize: inputTextSize,
+                          color: Colors.black87,
+                        ),
+                        icon: Icon(Icons.arrow_drop_down, size: size.width * 0.06),
+                        isExpanded: true,
                         items: products.map((Product product) {
                           return DropdownMenuItem<String>(
                             value: product.name,
-                            child: Text(product.name),
+                            child: Text(
+                              product.name,
+                              style: TextStyle(fontSize: inputTextSize),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
@@ -152,20 +183,34 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing),
                       
                       // Market selector
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Market',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          labelStyle: TextStyle(fontSize: labelSize),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: inputPadding,
+                          isDense: true,
                         ),
                         value: _selectedMarket,
+                        style: TextStyle(
+                          fontSize: inputTextSize,
+                          color: Colors.black87,
+                        ),
+                        icon: Icon(Icons.arrow_drop_down, size: size.width * 0.06),
+                        isExpanded: true,
                         items: markets.map((String market) {
                           return DropdownMenuItem<String>(
                             value: market,
-                            child: Text(market),
+                            child: Text(
+                              market,
+                              style: TextStyle(fontSize: inputTextSize),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         }).toList(),
                         onChanged: (String? newValue) {
@@ -175,30 +220,41 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing),
                       
                       // Timeframe selector
                       Row(
                         children: _timeframes.map((timeframe) {
+                          final isSelected = _selectedTimeframe == timeframe;
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding: EdgeInsets.symmetric(horizontal: size.width * 0.01),
                               child: ChoiceChip(
-                                label: Text(timeframe),
-                                selected: _selectedTimeframe == timeframe,
+                                label: Text(
+                                  timeframe,
+                                  style: TextStyle(
+                                    fontSize: inputTextSize * 0.9,
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : Colors.grey.shade700,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                                selected: isSelected,
                                 onSelected: (selected) {
                                   if (selected) {
                                     _onTimeframeChanged(timeframe);
                                   }
                                 },
                                 selectedColor: AppColors.primary.withOpacity(0.2),
-                                labelStyle: TextStyle(
-                                  color: _selectedTimeframe == timeframe
-                                      ? AppColors.primary
-                                      : Colors.grey.shade700,
-                                  fontWeight: _selectedTimeframe == timeframe
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: size.width * 0.01,
+                                  vertical: size.height * 0.005,
+                                ),
+                                labelPadding: EdgeInsets.symmetric(
+                                  horizontal: size.width * 0.01,
                                 ),
                               ),
                             ),
@@ -210,7 +266,7 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
                 ),
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               
               // Prediction content
               Expanded(
@@ -224,6 +280,8 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
   }
 
   Widget _buildContent() {
+    final size = MediaQuery.of(context).size;
+    
     if (_isLoading) {
       return const Center(
         child: LoadingIndicator(),
@@ -238,38 +296,72 @@ class _PredictionsScreenState extends State<PredictionsScreen> {
     }
     
     if (_prediction == null) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.trending_up_outlined,
         title: 'No Prediction Data',
         message: 'There is no prediction data available for this selection.',
       );
     }
     
-    return Column(
-      children: [
-        // Prediction chart
-        Expanded(
-          flex: 3,
-          child: PredictionChart(
-            prediction: _prediction!,
-            productName: _selectedProduct,
-            marketName: _selectedMarket,
-            timeframe: _selectedTimeframe,
-          ),
-        ),
+    // Use LayoutBuilder to adapt to available space
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // For very small heights, use a scrollable layout
+        if (constraints.maxHeight < size.height * 0.4) {
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: size.height * 0.35,
+                  child: PredictionChart(
+                    prediction: _prediction!,
+                    productName: _selectedProduct,
+                    marketName: _selectedMarket,
+                    timeframe: _selectedTimeframe,
+                  ),
+                ),
+                SizedBox(height: size.height * 0.015),
+                SizedBox(
+                  height: size.height * 0.25,
+                  child: PredictionFactors(
+                    prediction: _prediction!,
+                    productName: _selectedProduct,
+                    marketName: _selectedMarket,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         
-        const SizedBox(height: 16),
-        
-        // Prediction factors
-        Expanded(
-          flex: 2,
-          child: PredictionFactors(
-            prediction: _prediction!,
-            productName: _selectedProduct,
-            marketName: _selectedMarket,
-          ),
-        ),
-      ],
+        // For normal heights, use a flex layout
+        return Column(
+          children: [
+            // Prediction chart
+            Expanded(
+              flex: 3,
+              child: PredictionChart(
+                prediction: _prediction!,
+                productName: _selectedProduct,
+                marketName: _selectedMarket,
+                timeframe: _selectedTimeframe,
+              ),
+            ),
+            
+            SizedBox(height: size.height * 0.015),
+            
+            // Prediction factors
+            Expanded(
+              flex: 2,
+              child: PredictionFactors(
+                prediction: _prediction!,
+                productName: _selectedProduct,
+                marketName: _selectedMarket,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

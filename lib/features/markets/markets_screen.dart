@@ -21,7 +21,8 @@ class MarketsScreen extends StatefulWidget {
 }
 
 class _MarketsScreenState extends State<MarketsScreen> {
-  String _selectedProduct = '';
+  String _selectedProductId = '';
+  String _selectedProductName = '';
   List<Map<String, dynamic>> _marketComparisons = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -36,8 +37,10 @@ class _MarketsScreenState extends State<MarketsScreen> {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     
     if (productProvider.products.isNotEmpty) {
+      final firstProduct = productProvider.products.first;
       setState(() {
-        _selectedProduct = productProvider.products.first.name;
+        _selectedProductId = firstProduct.id;
+        _selectedProductName = firstProduct.name;
         _isLoading = true;
       });
       
@@ -52,9 +55,8 @@ class _MarketsScreenState extends State<MarketsScreen> {
         _errorMessage = null;
       });
       
-      final comparisons = await Provider.of<ProductProvider>(context, listen: false)
-          .apiService
-          .compareMarketPrices(_selectedProduct);
+      final apiService = Provider.of<ProductProvider>(context, listen: false).apiService;
+      final comparisons = await apiService.compareMarketPrices(_selectedProductId);
       
       setState(() {
         _marketComparisons = comparisons;
@@ -68,9 +70,10 @@ class _MarketsScreenState extends State<MarketsScreen> {
     }
   }
 
-  void _onProductChanged(String product) {
+  void _onProductChanged(String productId, String productName) {
     setState(() {
-      _selectedProduct = product;
+      _selectedProductId = productId;
+      _selectedProductName = productName;
     });
     _loadMarketComparisons();
   }
@@ -79,17 +82,34 @@ class _MarketsScreenState extends State<MarketsScreen> {
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     final List<Product> products = productProvider.products;
+    final size = MediaQuery.of(context).size;
+    
+    // Responsive text sizes
+    final titleSize = size.width * 0.05;
+    final subtitleSize = size.width * 0.035;
+    final buttonTextSize = size.width * 0.035;
+    
+    // Responsive spacing
+    final padding = size.width * 0.04;
+    final spacing = size.height * 0.02;
+    final buttonPadding = EdgeInsets.symmetric(
+      horizontal: size.width * 0.03,
+      vertical: size.height * 0.01,
+    );
     
     if (products.isEmpty) {
-      return const Center(
-        child: Text('No products available'),
+      return Center(
+        child: Text(
+          'No products available',
+          style: TextStyle(fontSize: subtitleSize),
+        ),
       );
     }
     
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -99,7 +119,8 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 children: [
                   Text(
                     'Markets',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    style: TextStyle(
+                      fontSize: titleSize,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -118,55 +139,81 @@ class _MarketsScreenState extends State<MarketsScreen> {
                         marketProvider.fetchMarkets(forceRefresh: true);
                       }
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Market'),
+                    icon: Icon(Icons.add, size: size.width * 0.04),
+                    label: Text(
+                      'Add Market',
+                      style: TextStyle(fontSize: buttonTextSize),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
+                      padding: buttonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ],
               ),
               
-              const SizedBox(height: 16),
+              SizedBox(height: spacing * 0.75),
               
               // Product selector
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: size.width * 0.04,
+                  vertical: size.height * 0.01,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: _selectedProduct.isEmpty ? products.first.name : _selectedProduct,
+                    value: _selectedProductId.isEmpty && products.isNotEmpty 
+                        ? products.first.id 
+                        : _selectedProductId,
                     isExpanded: true,
-                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                    style: const TextStyle(
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: AppColors.primary,
+                      size: size.width * 0.06,
+                    ),
+                    style: TextStyle(
                       color: AppColors.textDark,
-                      fontSize: 16,
+                      fontSize: subtitleSize,
                       fontWeight: FontWeight.bold,
                     ),
                     items: products.map((Product product) {
                       return DropdownMenuItem<String>(
-                        value: product.name,
-                        child: Text(product.name),
+                        value: product.id,
+                        child: Text(
+                          product.name,
+                          style: TextStyle(fontSize: subtitleSize),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
-                        _onProductChanged(newValue);
+                        // Find the product name for the selected ID
+                        final selectedProduct = products.firstWhere(
+                          (product) => product.id == newValue,
+                          orElse: () => products.first,
+                        );
+                        _onProductChanged(newValue, selectedProduct.name);
                       }
                     },
                   ),
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: spacing),
               
               // Market comparison content
               Expanded(
-                child: _buildContent(),
+                child: _buildContent(context),
               ),
             ],
           ),
@@ -175,7 +222,9 @@ class _MarketsScreenState extends State<MarketsScreen> {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    
     if (_isLoading) {
       return const Center(
         child: LoadingIndicator(),
@@ -197,30 +246,63 @@ class _MarketsScreenState extends State<MarketsScreen> {
       );
     }
     
-    return Column(
-      children: [
-        // Market comparison chart
-        Expanded(
-          flex: 2,
-          child: MarketComparisonChart(
-            data: _marketComparisons,
-            product: _selectedProduct,
-          ),
-        ),
+    // Use LayoutBuilder to adapt to available space
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // For very small heights, use a scrollable layout
+        if (constraints.maxHeight < size.height * 0.4) {
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: size.height * 0.35,
+                  child: MarketComparisonChart(
+                    data: _marketComparisons,
+                    product: _selectedProductName,
+                  ),
+                ),
+                SizedBox(height: size.height * 0.02),
+                SizedBox(
+                  height: size.height * 0.4,
+                  child: MarketList(
+                    marketComparisons: _marketComparisons,
+                    onMarketSelected: (market) {
+                      // Handle market selection here
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         
-        const SizedBox(height: 16),
-        
-        // Market list
-        Expanded(
-          flex: 3,
-          child: MarketList(
-            markets: [], // Add the appropriate list of markets here
-            onMarketSelected: (market) {
-              // Handle market selection here
-            },
-          ),
-        ),
-      ],
+        // For normal heights, use a flex layout with more space for the chart
+        return Column(
+          children: [
+            // Market comparison chart - give it more space
+            Expanded(
+              flex: 3, // Increased from 2 to 3
+              child: MarketComparisonChart(
+                data: _marketComparisons,
+                product: _selectedProductName,
+              ),
+            ),
+            
+            SizedBox(height: size.height * 0.015),
+            
+            // Market list
+            Expanded(
+              flex: 2, // Decreased from 3 to 2
+              child: MarketList(
+                marketComparisons: _marketComparisons,
+                onMarketSelected: (market) {
+                  // Handle market selection here
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

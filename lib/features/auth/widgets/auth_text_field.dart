@@ -26,38 +26,51 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen size for responsive sizing
+    final size = MediaQuery.of(context).size;
+    final labelSize = size.width * 0.035; // Relative label size
+    final fieldHeight = size.height * 0.07; // Relative field height
+    final iconSize = size.width * 0.05; // Relative icon size
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w500,
-            fontSize: 14,
+            fontSize: labelSize,
           ),
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hintText,
-            prefixIcon: Icon(
-              prefixIcon,
-              color: AppColors.textMedium,
-            ),
-            suffixIcon: suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade50,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+        SizedBox(height: size.height * 0.01),
+        SizedBox(
+          height: fieldHeight,
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            validator: validator,
+            style: TextStyle(fontSize: labelSize * 1.1),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(fontSize: labelSize * 1.1),
+              prefixIcon: Icon(
+                prefixIcon,
+                color: AppColors.textMedium,
+                size: iconSize,
+              ),
+              suffixIcon: suffixIcon,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: size.width * 0.04,
+                vertical: size.height * 0.015,
+              ),
+              isDense: true,
             ),
           ),
         ),

@@ -11,6 +11,7 @@ import 'widgets/price_summary.dart';
 import 'widgets/product_selector.dart';
 import 'widgets/trending_products.dart';
 import 'widgets/market_summary.dart';
+import '../../core/providers/trending_product_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeData() async {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
     final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+    final trendingProductProvider = Provider.of<TrendingProductProvider>(context, listen: false);
     
     // First fetch markets to populate the list
     await marketProvider.fetchMarkets();
@@ -43,6 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
       await productProvider.fetchProducts();
     }
     
+    await trendingProductProvider.fetchTrendingProducts();
+
     // Only set selected product if we have products and it's not already set
     if (productProvider.products.isNotEmpty && _selectedProductId.isEmpty) {
       setState(() {
@@ -60,9 +64,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedProductId.isNotEmpty) {
       final productProvider = Provider.of<ProductProvider>(context, listen: false);
       final marketProvider = Provider.of<MarketProvider>(context, listen: false);
+      final trendingProductProvider = Provider.of<TrendingProductProvider>(context, listen: false);
       
       await productProvider.fetchPriceData(_selectedProductId, _selectedTimeframe);
       await marketProvider.fetchMarkets(forceRefresh: true);
+      await trendingProductProvider.fetchTrendingProducts();
     }
   }
 
@@ -88,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
+    final trendingProductProvider = Provider.of<TrendingProductProvider>(context);
     
     if (_selectedProductId.isEmpty && productProvider.products.isNotEmpty) {
       setState(() {
@@ -248,10 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
                     TrendingProducts(
-                      products: productProvider.trendingProducts,
-                      onProductSelected: (productId, productName) {
-                        _onProductChanged(productId, productName);
-                      },
+                      products: trendingProductProvider.products,
                     ),
                   ],
                 ),
