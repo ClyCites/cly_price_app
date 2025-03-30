@@ -48,7 +48,7 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE ${AppConstants.trendingProductsTable} (
         id TEXT PRIMARY KEY,
-        productIdName TEXT NOT NULL,
+        productName TEXT NOT NULL,
         productCategory TEXT NOT NULL,
         productDescription TEXT NOT NULL,
         currentPrice REAL NOT NULL DEFAULT 0,
@@ -326,7 +326,7 @@ class DatabaseService {
         AppConstants.trendingProductsTable,
         {
           'id': product.id,
-          'productIdName': product.productName,
+          'productName': product.productName,
           'productCategory': product.productCategory,
           'productDescription': product.productDescription,
           'currentPrice': product.currentPrice,

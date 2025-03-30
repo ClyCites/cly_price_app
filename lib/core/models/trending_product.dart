@@ -40,7 +40,7 @@ class TrendingProduct {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'productIdName': productName,
+      'productName': productName,
       'productCategory': productCategory,
       'productDescription': productDescription,
       'currentPrice': currentPrice,
