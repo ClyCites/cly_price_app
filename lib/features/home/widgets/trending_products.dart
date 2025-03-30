@@ -78,7 +78,7 @@ class TrendingProducts extends StatelessWidget {
                     children: [
                       // Product Name
                       Text(
-                        product.name,
+                        product.productName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,

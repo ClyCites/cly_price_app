@@ -10,6 +10,7 @@ import 'core/providers/connectivity_provider.dart';  // Import ConnectivityProvi
 import 'core/services/service_locator.dart';
 import 'features/splash/splash_screen.dart';
 import 'core/providers/market_provider.dart'; // Add this line to import the MarketProvider class
+import 'core/providers/trending_product_provider.dart'; // Import TrendingProductProvider
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PredictionProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => MarketProvider()),
+        ChangeNotifierProvider(create: (_) => TrendingProductProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => serviceLocator.notificationProvider),
         ChangeNotifierProvider(create: (_) => serviceLocator.priceAlertProvider),

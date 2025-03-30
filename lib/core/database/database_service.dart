@@ -6,6 +6,7 @@ import '../models/product.dart';
 import '../models/price_data.dart';
 import '../models/price_entry.dart';
 import '../services/service_locator.dart';
+import '../models/trending_product.dart';
 import '../utils/app_logger.dart';
 
 class DatabaseService {
@@ -43,6 +44,18 @@ class DatabaseService {
         lastUpdated TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE ${AppConstants.trendingProductsTable} (
+        id TEXT PRIMARY KEY,
+        productIdName TEXT NOT NULL,
+        productCategory TEXT NOT NULL,
+        productDescription TEXT NOT NULL,
+        currentPrice REAL NOT NULL DEFAULT 0,
+        trendPercentage REAL NOT NULL DEFAULT 0,
+        lastUpdated TEXT NOT NULL,
+      )
+    ''');
     
     // Price data table
     await db.execute('''
@@ -70,6 +83,8 @@ class DatabaseService {
         timeframe TEXT NOT NULL
       )
     ''');
+
+    
     
     // Price entries table (for offline storage)
     await db.execute('''
@@ -90,23 +105,6 @@ class DatabaseService {
         status TEXT NOT NULL,
         category TEXT NOT NULL,
         syncStatus TEXT NOT NULL DEFAULT 'pending'
-      )
-    ''');
-    
-    // Trending products table
-    await db.execute('''
-      CREATE TABLE ${AppConstants.trendingProductsTable} (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        productType TEXT NOT NULL,
-        defaultUnit TEXT NOT NULL,
-        imageUrl TEXT,
-        isPopular INTEGER NOT NULL DEFAULT 1,
-        currentPrice REAL NOT NULL DEFAULT 0,
-        priceChange REAL NOT NULL DEFAULT 0,
-        priceChangePercentage REAL NOT NULL DEFAULT 0,
-        lastUpdated TEXT NOT NULL
       )
     ''');
     
@@ -316,40 +314,38 @@ class DatabaseService {
   // Trending Products Methods
   // ==================
   
-  Future<void> cacheTrendingProducts(List<Product> products) async {
+  Future<void> cacheTrendingProducts(List<TrendingProduct> products) async {
     final batch = _database.batch();
-    
+
     // Clear existing trending products
     batch.delete(AppConstants.trendingProductsTable);
-    
+
     // Insert new trending products
     for (final product in products) {
       batch.insert(
         AppConstants.trendingProductsTable,
         {
           'id': product.id,
-          'name': product.name,
-          'category': product.category,
-          'productType': product.productType,
-          'defaultUnit': product.defaultUnit,
-          'imageUrl': product.imageUrl,
-          'isPopular': product.isPopular ? 1 : 0,
+          'productIdName': product.productName,
+          'productCategory': product.productCategory,
+          'productDescription': product.productDescription,
           'currentPrice': product.currentPrice,
-          'priceChange': product.priceChange,
-          'priceChangePercentage': product.priceChangePercentage,
+          'trendPercentage': product.trendPercentage,
           'lastUpdated': DateTime.now().toIso8601String(),
         },
       );
     }
-    
+
     await batch.commit();
     logger.i('Cached ${products.length} trending products');
   }
+
+
   
-  Future<List<Product>> getCachedTrendingProducts() async {
+  Future<List<TrendingProduct>> getCachedTrendingProducts() async {
     final maps = await _database.query(AppConstants.trendingProductsTable);
     return List.generate(maps.length, (i) {
-      return Product.fromMap(maps[i]);
+      return TrendingProduct.fromMap(maps[i]);
     });
   }
   

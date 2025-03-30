@@ -148,28 +148,28 @@ class ProductProvider with ChangeNotifier {
     }
 
     // Fetch trending products
-    await fetchTrendingProducts();
+    // await fetchTrendingProducts();
   }
 
-  Future<void> fetchTrendingProducts() async {
-    try {
-      final trending = await serviceLocator.apiService.getTrendingProducts();
-      _trendingProducts = trending;
-      await serviceLocator.databaseService.cacheTrendingProducts(trending);
-      notifyListeners();
-    } catch (e) {
-      _logger.severe('Failed to fetch trending products: $e');
-      try {
-        final cachedTrending = await serviceLocator.databaseService.getCachedTrendingProducts();
-        _trendingProducts = cachedTrending;
-        notifyListeners();
-      } catch (cacheError) {
-        _logger.severe('Failed to load cached trending products: $cacheError');
-        _trendingProducts = [];
-        notifyListeners();
-      }
-    }
-  }
+  // Future<void> fetchTrendingProducts() async {
+  //   try {
+  //     final trending = await serviceLocator.apiService.getTrendingProducts();
+  //     _trendingProducts = trending;
+  //     await serviceLocator.databaseService.cacheTrendingProducts(trending);
+  //     notifyListeners();
+  //   } catch (e) {
+  //     _logger.severe('Failed to fetch trending products: $e');
+  //     try {
+  //       final cachedTrending = await serviceLocator.databaseService.getCachedTrendingProducts();
+  //       _trendingProducts = cachedTrending;
+  //       notifyListeners();
+  //     } catch (cacheError) {
+  //       _logger.severe('Failed to load cached trending products: $cacheError');
+  //       _trendingProducts = [];
+  //       notifyListeners();
+  //     }
+  //   }
+  // }
 
   Future<void> fetchMarkets() async {
     try {

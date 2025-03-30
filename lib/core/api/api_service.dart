@@ -10,6 +10,7 @@ import '../models/price_entry.dart'; // Adjust the path as necessary
 import '../services/service_locator.dart';
 import '../models/market_model.dart'; // Adjust the path as necessary
 import '../models/price_alert_model.dart'; // Adjust the path as necessary
+import '../models/trending_product.dart';
 
 class ApiService {
   final String baseUrl = AppConstants.apiBaseUrl;
@@ -327,9 +328,9 @@ class ApiService {
     return List<PriceData>.from(data.map((json) => PriceData.fromJson(json)));
   }
   
-  Future<List<Product>> getTrendingProducts() async {
+  Future<List<TrendingProduct>> getTrendingProducts() async {
     final data = await _get('prices/trends/popular');
-    return List<Product>.from(data.map((json) => Product.fromJson(json)));
+    return List<TrendingProduct>.from(data.map((json) => TrendingProduct.fromJson(json)));
   }
   
   Future<PriceEntry> submitPriceEntry(PriceEntry entry) async {
