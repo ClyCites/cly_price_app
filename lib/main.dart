@@ -11,6 +11,7 @@ import 'core/services/service_locator.dart';
 import 'features/splash/splash_screen.dart';
 import 'core/providers/market_provider.dart'; // Add this line to import the MarketProvider class
 import 'core/providers/trending_product_provider.dart'; // Import TrendingProductProvider
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -20,6 +21,8 @@ void main() async {
   } catch (e) {
     // Log or handle error accordingly
     print("Error during service locator setup: $e");
+    // Optionally, you can exit the app or show an error screen
+    return; // Exit if setup fails
   }
   
   runApp(const MyApp());
@@ -41,6 +44,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => MarketProvider()),
         ChangeNotifierProvider(create: (_) => TrendingProductProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        // Ensure these providers are created after the service locator is set up
         ChangeNotifierProvider(create: (_) => serviceLocator.notificationProvider),
         ChangeNotifierProvider(create: (_) => serviceLocator.priceAlertProvider),
       ],

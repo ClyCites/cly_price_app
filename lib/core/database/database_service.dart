@@ -53,7 +53,7 @@ class DatabaseService {
         productDescription TEXT NOT NULL,
         currentPrice REAL NOT NULL DEFAULT 0,
         trendPercentage REAL NOT NULL DEFAULT 0,
-        lastUpdated TEXT NOT NULL,
+        lastUpdated TEXT NOT NULL
       )
     ''');
     
